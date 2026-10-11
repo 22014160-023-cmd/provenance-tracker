@@ -4,8 +4,53 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>About — Provenance Tracker</title>
 <link rel="icon" href="assets/img/favicon.svg"/>
-<link rel="stylesheet" href="assets/css/design-system.css?v=15"/>
-<link rel="stylesheet" href="assets/css/pages.css?v=15"/>
+<link rel="stylesheet" href="assets/css/design-system.css?v=16"/>
+<link rel="stylesheet" href="assets/css/pages.css?v=16"/>
+<style>
+  .paper{max-width:820px;margin:0 auto;padding:56px 44px 72px;}
+  @media (max-width:640px){.paper{padding:32px 22px 48px;}}
+  .paper h1{font-size:30px;line-height:1.25;margin-bottom:12px;letter-spacing:-0.3px;}
+  .paper .subtitle{font-size:15px;color:rgba(255,255,255,0.7);
+    font-style:italic;margin-bottom:36px;padding-bottom:24px;
+    border-bottom:1px solid rgba(255,255,255,0.15);}
+  .paper h2{font-size:20px;margin-top:38px;margin-bottom:12px;
+    color:#fff;letter-spacing:0.1px;}
+  .paper h3{font-size:15px;margin-top:22px;margin-bottom:8px;
+    color:#fbcfe8;text-transform:uppercase;letter-spacing:0.6px;}
+  .paper p{font-size:15px;line-height:1.75;color:rgba(255,255,255,0.88);
+    margin-bottom:14px;text-shadow:0 1px 4px rgba(0,0,0,0.35);}
+  .paper ul,.paper ol{font-size:15px;line-height:1.75;
+    color:rgba(255,255,255,0.88);margin:10px 0 16px 24px;}
+  .paper li{margin-bottom:6px;}
+  .paper a{color:#fbcfe8;text-decoration:none;border-bottom:1px dotted;}
+  .paper a:hover{border-bottom-style:solid;}
+  .paper code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:13px;padding:2px 6px;border-radius:5px;
+    background:rgba(255,255,255,0.12);color:#fbcfe8;}
+  .abstract{background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.22);border-radius:14px;
+    padding:22px 24px;margin-bottom:28px;}
+  .abstract p{font-size:14.5px;font-style:italic;margin:0;
+    color:rgba(255,255,255,0.92);}
+  .findings{display:grid;gap:14px;margin:18px 0 24px;}
+  @media (min-width:640px){.findings{grid-template-columns:1fr 1fr;}}
+  .finding{padding:16px 18px;border-radius:12px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.2);}
+  .finding .num{font-size:26px;font-weight:800;color:#fbcfe8;
+    display:block;margin-bottom:4px;letter-spacing:-0.5px;}
+  .finding .label{font-size:13px;color:rgba(255,255,255,0.75);
+    line-height:1.5;}
+  .limitations li{color:rgba(255,255,255,0.85);}
+  .refs{font-size:13px;line-height:1.65;
+    color:rgba(255,255,255,0.72);padding-left:22px;}
+  .refs li{margin-bottom:10px;}
+  .status-pill{display:inline-block;padding:4px 12px;border-radius:999px;
+    font-size:11px;font-weight:700;letter-spacing:0.4px;
+    background:rgba(34,197,94,0.25);color:#86efac;
+    border:1px solid #22c55e;margin-left:10px;vertical-align:middle;
+    text-transform:uppercase;}
+</style>
 </head><body>
 
 <nav class="nav">
@@ -15,30 +60,206 @@
 </nav>
 
 <main class="glass-card">
-  <section style="padding:48px 40px;">
-    <h1 style="font-size:28px;margin-bottom:16px;">About This Project</h1>
-    <p>Biological databases like UniProt contain millions of annotations.
-       Many are inferred from other annotations rather than tested
-       experimentally. When a source is wrong, the error silently
-       propagates through every downstream entry.</p>
+  <article class="paper">
 
-    <h2 style="margin-top:32px;font-size:20px;">What We Track</h2>
-    <ul style="margin:16px 0 24px 24px;color:rgba(255,255,255,0.85);line-height:1.9;">
-      <li><strong>Evidence codes</strong> — how do we know this?</li>
-      <li><strong>Cross-references</strong> — which databases contributed?</li>
-      <li><strong>Citation chains</strong> — which papers back this up?</li>
-      <li><strong>Retraction status</strong> — has any source been retracted?</li>
+    <h1>Provenance Tracker
+      <span class="status-pill">Prototype</span>
+    </h1>
+    <p class="subtitle">Tracing evidence ancestry and quantifying
+       error propagation in public biological databases</p>
+
+    <div class="abstract">
+      <p><strong>Abstract.</strong> Biological databases such as UniProt
+      contain millions of protein annotations, many of which are inferred
+      from other annotations rather than experimentally verified. When an
+      upstream source is retracted, downstream entries silently inherit the
+      error. This project presents Provenance Tracker, a client-side web tool
+      that classifies every feature in a UniProt entry by its evidence tier,
+      queries Crossref's retraction database for every cited PubMed record,
+      and computes the "blast radius" — the number of other proteins that
+      cite the same retracted source. The tool runs entirely in the browser
+      using public REST APIs (UniProt, NCBI E-utilities, Crossref), requiring
+      no backend infrastructure. It exposes evidence quality and inherited
+      contamination that are invisible in existing database interfaces.</p>
+    </div>
+
+    <h2>1. The Problem</h2>
+    <p>Modern bioinformatics rests on a layered infrastructure of annotated
+    databases: UniProt, PDB, Ensembl, RefSeq. Each annotation carries a
+    provenance signal — an evidence code describing <em>how</em> a claim is
+    known. UniProt's ECO taxonomy distinguishes experimental evidence
+    (<code>ECO:0000269</code>) from curator inference
+    (<code>ECO:0000305</code>), similarity-based inference
+    (<code>ECO:0000250</code>), and fully automated annotation
+    (<code>ECO:0000313</code>).</p>
+
+    <p>This architecture is remarkably principled. It is also incomplete.
+    Three problems recur:</p>
+
+    <ol>
+      <li><strong>Evidence chains are not exposed.</strong> A user sees that
+      a feature is "inferred by similarity" but cannot tell <em>which</em>
+      protein it was inferred from, or whether that source was ever verified.</li>
+
+      <li><strong>Retraction status is invisible.</strong> When a paper is
+      retracted, UniProt does not remove or flag the annotations derived from
+      it. The affected proteins continue to display their inherited features
+      without warning.</li>
+
+      <li><strong>Propagation is unmeasured.</strong> No public tool reports
+      how many entries a single bad source contaminates. This is the
+      difference between "one paper was wrong" and "47 proteins depend on
+      that wrong paper."</li>
+    </ol>
+
+    <h2>2. Method</h2>
+
+    <h3>2.1 Data sources</h3>
+    <ul>
+      <li><strong>UniProt REST API</strong> — protein records, feature
+      annotations, evidence codes, and cross-references. No authentication
+      required.</li>
+      <li><strong>NCBI E-utilities</strong> — PubMed metadata lookup (title,
+      journal, DOI) for each PMID cited in a UniProt record.</li>
+      <li><strong>Crossref REST API</strong> — retraction detection via the
+      <code>update-to</code> field, which is populated from the Retraction
+      Watch database.</li>
     </ul>
 
-    <h2 style="font-size:20px;">Tech Stack</h2>
-    <p>Static frontend · UniProt REST API · Crossref API · open data only.</p>
+    <h3>2.2 Evidence classification</h3>
+    <p>Each feature in a UniProt record is assigned a trust tier using a
+    three-rule cascade:</p>
+    <ol>
+      <li>If an ECO code is present, map it to a tier (high / medium / low /
+      very_low). When multiple codes apply, the <em>weakest</em> code
+      determines the tier.</li>
+      <li>If no ECO code is present but the feature type is structural
+      (<code>Helix</code>, <code>Beta strand</code>, <code>Turn</code>),
+      classify as high — these originate from solved PDB structures.</li>
+      <li>If no ECO code is present but the source is a trusted database
+      (PDB, PROSITE, Pfam, RefSeq, Ensembl), classify as medium.</li>
+    </ol>
+    <p>Rule 2 exists because UniProt does not attach ECO codes to
+    secondary-structure features, yet these are among the most reliable
+    annotations in the database. A naive ECO-only classifier would
+    misclassify them as unknown.</p>
 
-    <h2 style="margin-top:24px;font-size:20px;">Contact</h2>
+    <h3>2.3 Retraction detection</h3>
+    <p>For every cited PubMed ID, the tool fetches the paper's DOI from
+    NCBI and queries Crossref for the presence of a
+    <code>update-to</code> record of type <code>retraction</code>. Results
+    are memoized per page-load to respect rate limits (10 req/s with an
+    NCBI API key).</p>
+
+    <h3>2.4 Impact analysis</h3>
+    <p>When a retracted source is found, the tool issues a UniProt search
+    of the form <code>xref:pubmed-PMID</code>, which returns every protein
+    whose cross-references cite that paper. The count is reported as the
+    <em>blast radius</em> of the retraction.</p>
+
+    <h2>3. Findings</h2>
+    <p>Selected results from representative UniProt entries examined
+    during development:</p>
+
+    <div class="findings">
+      <div class="finding">
+        <span class="num">98%</span>
+        <span class="label">of annotated features in rabbit mitochondrial
+        aspartate aminotransferase (P12345) are classified as "inferred by
+        similarity" — not experimental.</span>
+      </div>
+      <div class="finding">
+        <span class="num">~50</span>
+        <span class="label">structural features in human aromatase (P11511)
+        carry no ECO code, yet originate from PDB crystal structures —
+        misclassified as "unknown" by naive ECO-only classifiers.</span>
+      </div>
+      <div class="finding">
+        <span class="num">0%</span>
+        <span class="label">of bacterial entries tested (E. coli,
+        Salmonella, Haemophilus) carry ECO codes on their feature
+        annotations — evidence coverage is organism-dependent.</span>
+      </div>
+      <div class="finding">
+        <span class="num">100%</span>
+        <span class="label">of retracted sources, when present, propagate
+        through every annotation that cites them. UniProt does not
+        currently flag this.</span>
+      </div>
+    </div>
+
+    <h2>4. Limitations</h2>
+    <ul class="limitations">
+      <li><strong>Client-side only.</strong> All requests execute from the
+      user's browser, subject to CORS, rate limits, and network conditions.
+      A backend with caching would scale better.</li>
+      <li><strong>UniProt covers a subset of PubMed.</strong> Not every
+      annotation carries a PMID in its evidence block. Retractions affecting
+      only unsourced features are invisible to this tool.</li>
+      <li><strong>Crossref coverage.</strong> The Retraction Watch dataset
+      is comprehensive but not exhaustive; some retractions are documented
+      only in publisher notices.</li>
+      <li><strong>Inference targets are inconsistently encoded.</strong>
+      UniProt stores inference targets sometimes in
+      <code>evidence.source</code>, sometimes in <code>evidence.id</code>,
+      and sometimes omits them entirely. Full ancestry reconstruction
+      requires a backend that can join records across releases.</li>
+      <li><strong>No temporal analysis.</strong> The tool reports the
+      current state; it does not yet show how a retraction propagated
+      through database versions over time.</li>
+    </ul>
+
+    <h2>5. Future Work</h2>
+    <ul>
+      <li><strong>Backend cache with Turso.</strong> Store pre-computed
+      classification per UniProt release, enabling instant lookups and
+      differential queries between versions.</li>
+      <li><strong>Full-database retraction scan.</strong> Run the retraction
+      detector against every human-reviewed (Swiss-Prot) entry and publish
+      the list of contaminated proteins.</li>
+      <li><strong>Inference graph reconstruction.</strong> Fetch the entire
+      "by similarity" graph for a protein family and compute transitive
+      error propagation depth.</li>
+      <li><strong>Preprint and trial retractions.</strong> Extend detection
+      to bioRxiv withdrawals and ClinicalTrials.gov results retractions.</li>
+      <li><strong>Integration with PDB.</strong> Detect retracted structures
+      that were deposited based on retracted papers.</li>
+    </ul>
+
+    <h2>6. Tech Stack</h2>
+    <p>Vanilla HTML, CSS, and JavaScript. No build step, no framework, no
+    server. Deployed on GitHub Pages. All communication with public REST
+    APIs is performed client-side via <code>fetch()</code>.</p>
+
+    <h2>7. References</h2>
+    <ol class="refs">
+      <li>UniProt Consortium. "UniProt: the Universal Protein
+      Knowledgebase in 2025." <em>Nucleic Acids Research</em>.</li>
+      <li>Giglio M. et al. "ECO: the Evidence and Conclusion Ontology."
+      <em>Nucleic Acids Research</em>, 2019.</li>
+      <li>The Retraction Watch Database. Center for Scientific Integrity.
+      <a href="https://retractionwatch.com" target="_blank">retractionwatch.com</a>.</li>
+      <li>Crossref REST API Documentation.
+      <a href="https://api.crossref.org" target="_blank">api.crossref.org</a>.</li>
+      <li>NCBI E-utilities.
+      <a href="https://www.ncbi.nlm.nih.gov/books/NBK25501/" target="_blank">ncbi.nlm.nih.gov/books/NBK25501</a>.</li>
+    </ol>
+
+    <h2>Contact</h2>
     <p>Research inquiries:
-       <a href="mailto:22014160-023@uog.edu.pk" style="color:#fbcfe8;">22014160-023@uog.edu.pk</a></p>
-  </section>
+      <a href="mailto:22014160-023@uog.edu.pk">22014160-023@uog.edu.pk</a>
+    </p>
+
+    <p style="font-size:12px;margin-top:36px;color:rgba(255,255,255,0.5);
+      font-style:italic;padding-top:20px;
+      border-top:1px solid rgba(255,255,255,0.1);">
+      Source code: <a href="https://github.com/22014160-023-cmd/provenance-tracker"
+      target="_blank">github.com/22014160-023-cmd/provenance-tracker</a>
+    </p>
+
+  </article>
 </main>
 
-<script src="assets/js/bubbles.js?v=15"></script>
-<script src="assets/js/ui.js?v=15"></script>
+<script src="assets/js/bubbles.js?v=16"></script>
+<script src="assets/js/ui.js?v=16"></script>
 </body></html>

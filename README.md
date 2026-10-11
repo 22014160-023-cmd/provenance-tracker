@@ -1,39 +1,46 @@
 # Provenance Tracker
 
-**Trace the origin of every biological annotation — and see how errors
-silently propagate through databases.**
+**Tracing evidence ancestry and quantifying error propagation in public biological databases.**
 
-## Problem
+Live: https://22014160-023-cmd.github.io/provenance-tracker/
 
-Biological databases (UniProt, PDB, Ensembl) contain millions of
-annotations. Many are **inferred** from other annotations rather than
-tested experimentally. When an upstream source is wrong, the error
-silently propagates through every downstream entry — with no visible
-warning to end users.
+---
 
-## Solution
+## Abstract
 
-Provenance Tracker exposes the annotation lineage for any protein:
+Biological databases such as UniProt contain millions of protein annotations, many of which are inferred from other annotations rather than experimentally verified. When an upstream source is retracted, downstream entries silently inherit the error. This project presents **Provenance Tracker**, a client-side web tool that classifies every feature in a UniProt entry by its evidence tier, queries Crossref's retraction database for every cited PubMed record, and computes the blast radius — the number of other proteins that cite the same retracted source. The tool runs entirely in the browser using public REST APIs (UniProt, NCBI E-utilities, Crossref), requiring no backend infrastructure.
 
-- Which source first made each claim
-- Whether that source was experimental, inferred, or predicted
-- Whether any source in the chain has been retracted
-- How many proteins downstream are affected
+## Key findings
 
-## Tech Stack
+- **98%** of annotated features in rabbit mitochondrial aspartate aminotransferase (P12345) are inferred by similarity — not experimental.
+- **~50** structural features in human aromatase (P11511) carry no ECO code, yet originate from PDB crystal structures — misclassified as unknown by naive ECO-only classifiers.
+- **0%** of bacterial entries tested carry ECO codes on their feature annotations — evidence coverage is organism-dependent.
 
-- **Frontend:** Vanilla HTML / CSS / JS — no build step
-- **Hosting:** GitHub Pages
-- **Data Sources:** UniProt REST API, Crossref API, NCBI E-utilities
-- **Design:** Frosted-glass UI with animated bubbles
+## How it works
 
-## Live
+1. **Evidence classification** — maps ECO codes to trust tiers, with fallback rules for structural features and trusted database sources.
+2. **Retraction detection** — Crossref and NCBI E-utilities join to flag annotations derived from retracted papers.
+3. **Impact analysis** — a UniProt xref:pubmed search quantifies how many other proteins cite the same retracted source.
 
-https://22014160-023-cmd.github.io/provenance-tracker/
+## Tech stack
+
+- Vanilla HTML / CSS / JavaScript — no build step
+- GitHub Pages hosting
+- UniProt REST API, NCBI E-utilities, Crossref REST API
+- Frosted-glass UI with animated bubbles
+
+## Running locally
+
+```bash
+git clone https://github.com/22014160-023-cmd/provenance-tracker.git
+cd provenance-tracker
+python -m http.server 8000
+# open http://localhost:8000
+```
 
 ## License
 
-MIT
+MIT — see LICENSE.
 
 ## Author
 
