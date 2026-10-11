@@ -4,8 +4,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Search — BioOrigin</title>
 <link rel="icon" href="assets/img/favicon.svg"/>
-<link rel="stylesheet" href="assets/css/design-system.css?v=34"/>
-<link rel="stylesheet" href="assets/css/pages.css?v=34"/>
+<link rel="stylesheet" href="assets/css/design-system.css?v=35"/>
+<link rel="stylesheet" href="assets/css/pages.css?v=35"/>
 <style>
   /* ---------- Horizontal scroll wrapper — desktop layout frozen ---------- */
   .card-scroll{width:100%;padding-bottom:12px;}
@@ -140,6 +140,23 @@
     color:rgba(255,255,255,0.85);font-weight:600;
     z-index:5;
   }
+  .view3d-spin{
+    position:absolute;bottom:14px;right:170px;
+    font-size:11px;padding:7px 14px;
+    border-radius:999px;
+    background:rgba(255,255,255,0.14);
+    border:1px solid rgba(255,255,255,0.32);
+    color:#fff;cursor:pointer;font-weight:600;
+    font-family:inherit;z-index:5;
+    touch-action:manipulation;
+    transition:background 0.18s ease;
+  }
+  .view3d-spin:hover{background:rgba(255,255,255,0.24)}
+  .view3d-spin.paused{
+    background:rgba(34,197,94,0.22);
+    border-color:rgba(34,197,94,0.55);
+  }
+
   .view3d-switch{
     position:absolute;bottom:14px;right:16px;
     font-size:11px;padding:7px 14px;
@@ -287,7 +304,24 @@
     .mol-meta{font-size:10.5px}
     .view3d-title{font-size:10px;top:10px;left:12px}
     .view3d-source{font-size:9.5px;top:10px;right:12px;padding:4px 9px}
-    .view3d-switch{font-size:10.5px;padding:6px 12px;bottom:10px;right:12px}
+    .view3d-spin{
+    position:absolute;bottom:14px;right:170px;
+    font-size:11px;padding:7px 14px;
+    border-radius:999px;
+    background:rgba(255,255,255,0.14);
+    border:1px solid rgba(255,255,255,0.32);
+    color:#fff;cursor:pointer;font-weight:600;
+    font-family:inherit;z-index:5;
+    touch-action:manipulation;
+    transition:background 0.18s ease;
+  }
+  .view3d-spin:hover{background:rgba(255,255,255,0.24)}
+  .view3d-spin.paused{
+    background:rgba(34,197,94,0.22);
+    border-color:rgba(34,197,94,0.55);
+  }
+
+  .view3d-switch{font-size:10.5px;padding:6px 12px;bottom:10px;right:12px}
     .protein-item{padding:14px 14px;min-height:64px}
     .protein-item h4{font-size:13.5px}
     .protein-item .meta{font-size:11px}
@@ -309,6 +343,8 @@
   }
   @media (max-width: 600px){
     .collective-card{padding:18px 16px 22px;border-radius:16px}
+    .view3d-spin{bottom:56px;right:14px;font-size:10.5px;padding:6px 12px}
+    .view3d-switch{bottom:14px;right:14px;font-size:10.5px;padding:6px 12px}
     .collective-header h2{font-size:17px}
     .chart-box{height:320px;padding:8px 8px 4px}
     .view3d-box{height:auto;min-height:380px}
@@ -380,17 +416,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
 <!-- Project scripts -->
-<script src="assets/js/config.js?v=34"></script>
-<script src="assets/js/bubbles.js?v=34"></script>
-<script src="assets/js/ui.js?v=34"></script>
-<script src="assets/js/api.js?v=34"></script>
-<script src="assets/js/evidence.js?v=34"></script>
-<script src="assets/js/retraction.js?v=34"></script>
-<script src="assets/js/impact.js?v=34"></script>
-<script src="assets/js/structure.js?v=34"></script>
-<script src="assets/js/collective.js?v=34"></script>
-<script src="assets/js/tree.js?v=34"></script>
-<script src="assets/js/pdf.js?v=34"></script>
+<script src="assets/js/config.js?v=35"></script>
+<script src="assets/js/bubbles.js?v=35"></script>
+<script src="assets/js/ui.js?v=35"></script>
+<script src="assets/js/api.js?v=35"></script>
+<script src="assets/js/evidence.js?v=35"></script>
+<script src="assets/js/retraction.js?v=35"></script>
+<script src="assets/js/impact.js?v=35"></script>
+<script src="assets/js/structure.js?v=35"></script>
+<script src="assets/js/collective.js?v=35"></script>
+<script src="assets/js/tree.js?v=35"></script>
+<script src="assets/js/pdf.js?v=35"></script>
 
 <script>
 (function () {
@@ -493,7 +529,8 @@
               '<div class="view3d-box">' +
                 '<div class="view3d-title">🧬 Representative 3D Structure</div>' +
                 '<div class="view3d-source" id="view3d-source">Loading…</div>' +
-                '<button class="view3d-switch" id="switch3d">Next structure →</button>' +
+                '<button class="view3d-spin" id="spin-toggle" title="Toggle rotation">⏸ Pause</button>
+                <button class="view3d-switch" id="switch3d">Next structure →</button>' +
                 '<div id="collective-3d"></div>' +
               '</div>' +
             '</div>' +
@@ -624,6 +661,18 @@
       btn.addEventListener('click', function () {
         load3D(proteins, currentProteinIndex + 1);
         if (navigator.vibrate) navigator.vibrate(8);
+      });
+    }
+
+    // Wire the rotation toggle button
+    var spinBtn = document.getElementById('spin-toggle');
+    if (spinBtn) {
+      spinBtn.addEventListener('click', function () {
+        if (!window.Structure) return;
+        var nowSpinning = window.Structure.toggleSpin();
+        spinBtn.textContent = nowSpinning ? '⏸ Pause' : '▶ Spin';
+        spinBtn.classList.toggle('paused', !nowSpinning);
+        if (navigator.vibrate) navigator.vibrate(6);
       });
     }
   }

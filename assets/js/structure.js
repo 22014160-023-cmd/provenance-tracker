@@ -2,6 +2,8 @@
 (function () {
   var pdbIdCache = {};
   var activeViewer = null;
+  var spinPaused = false;
+  var lastKnownSpin = 0.35;
 
   // ---------- STEP 1: get PDB IDs from UniProt crossreferences ----------
   function getPDBIds(acc) {
@@ -51,6 +53,33 @@
   }
 
   // ---------- Stop current viewer ----------
+  function pauseSpin() {
+    if (!activeViewer) return;
+    spinPaused = true;
+    try {
+      if (activeViewer.spin && typeof activeViewer.spin === 'function') {
+        activeViewer.spin('y', 0);
+      }
+    } catch (e) {}
+  }
+
+  function resumeSpin() {
+    if (!activeViewer) return;
+    spinPaused = false;
+    try {
+      activeViewer.spin('y', lastKnownSpin);
+      activeViewer.render();
+    } catch (e) {}
+  }
+
+  function toggleSpin() {
+    if (spinPaused) resumeSpin();
+    else pauseSpin();
+    return !spinPaused;   // returns true if now spinning
+  }
+
+  function isSpinning() { return !spinPaused; }
+
   function stopActive() {
     if (activeViewer && activeViewer.stopAnimate) {
       try { activeViewer.stopAnimate(); } catch (e) {}
@@ -112,7 +141,12 @@
 
         viewer.zoomTo();
         viewer.zoom(1.05);
-        viewer.spin('y', 0.35);
+        // Respect the current pause state
+        if (spinPaused) {
+          viewer.spin('y', 0);
+        } else {
+          viewer.spin('y', lastKnownSpin);
+        }
         viewer.render();
 
         // Force a resize after layout
@@ -275,6 +309,10 @@
 
   window.Structure = {
     stopActive: stopActive,
+    pauseSpin: pauseSpin,
+    resumeSpin: resumeSpin,
+    toggleSpin: toggleSpin,
+    isSpinning: isSpinning,
     renderFromSearch: renderFromSearch,
     getPDBIds: getPDBIds,
     tryOne: tryOne,
