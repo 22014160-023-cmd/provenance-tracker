@@ -3,8 +3,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Search — Provenance Tracker</title>
-<link rel="stylesheet" href="assets/css/design-system.css?v=13"/>
-<link rel="stylesheet" href="assets/css/pages.css?v=13"/>
+<link rel="stylesheet" href="assets/css/design-system.css?v=14"/>
+<link rel="stylesheet" href="assets/css/pages.css?v=14"/>
 <style>
   .evidence-badge{display:inline-block;padding:3px 10px;border-radius:999px;
     font-size:11px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;
@@ -91,13 +91,13 @@
   </section>
 </main>
 
-<script src="assets/js/config.js?v=13"></script>
-<script src="assets/js/bubbles.js?v=13"></script>
-<script src="assets/js/ui.js?v=13"></script>
-<script src="assets/js/api.js?v=13"></script>
-<script src="assets/js/evidence.js?v=13"></script>
-<script src="assets/js/retraction.js?v=13"></script>
-<script src="assets/js/provenance.js?v=13"></script>
+<script src="assets/js/config.js?v=14"></script>
+<script src="assets/js/bubbles.js?v=14"></script>
+<script src="assets/js/ui.js?v=14"></script>
+<script src="assets/js/api.js?v=14"></script>
+<script src="assets/js/evidence.js?v=14"></script>
+<script src="assets/js/retraction.js?v=14"></script>
+<script src="assets/js/provenance.js?v=14"></script>
 
 <script>
 (function () {
@@ -110,12 +110,8 @@
     return /^[A-Z][A-Z0-9]{5,9}$/i.test(s) && /\d/.test(s);
   }
 
-  // Feature renderer — works even if evidences is missing
   function renderFeature(feature, retractions) {
-    var codes = window.Evidence.extractCodes(feature);
-    var c = codes.length ? window.Evidence.classifyEvidence(codes) : {
-      tier: "unknown", color: "#9ca3af", label: "No evidence"
-    };
+    var c = window.Evidence.classifyFeature(feature);
     var desc = feature.description || feature.type || "Feature";
     var positions = "";
     if (feature.location && feature.location.start && feature.location.end) {
@@ -146,9 +142,7 @@
   function summarize(features) {
     var tally = { high: 0, medium: 0, low: 0, very_low: 0, unknown: 0 };
     features.forEach(function (f) {
-      var codes = window.Evidence.extractCodes(f);
-      var c = codes.length ? window.Evidence.classifyEvidence(codes)
-                           : { tier: "unknown" };
+      var c = window.Evidence.classifyFeature(f);
       tally[c.tier] = (tally[c.tier] || 0) + 1;
     });
     return tally;
@@ -162,11 +156,8 @@
                 r.proteinDescription.recommendedName.fullName.value) ||
                r.uniProtkbId || "Unknown";
     var org = (r.organism && r.organism.scientificName) || "";
-
-    // Include ALL features, not just ones with evidence
-    var features = (r.features || []).slice(0, 100);
+    var features = (r.features || []).slice(0, 200);
     var tally = summarize(features);
-
     var colors = { high: "#22c55e", medium: "#eab308", low: "#f97316",
                    very_low: "#ef4444", unknown: "#9ca3af" };
     var pills = Object.keys(tally).filter(function (k) { return tally[k] > 0; })
@@ -189,14 +180,13 @@
         '</strong> rely on retracted papers.</div></div>'
       : "";
 
-    // Show all features (up to 30 for readability)
     var rows = features.length
-      ? features.slice(0, 30).map(function (f) {
+      ? features.slice(0, 25).map(function (f) {
           return renderFeature(f, retractions);
         }).join("")
-        + (features.length > 30
+        + (features.length > 25
             ? '<div class="feature-meta" style="margin-top:8px">' +
-              (features.length - 30) + ' more features…</div>'
+              (features.length - 25) + ' more features…</div>'
             : '')
       : '<div class="feature-meta">This UniProt entry has no features.</div>';
 
@@ -212,9 +202,7 @@
         (pills ? '<div class="summary-bar">' + pills + '</div>' : "") +
         '<div>' + rows + '</div>' +
         '<div class="prov-section">' +
-          '<div class="prov-header">' +
-            '<h5>🌳 Evidence Hierarchy</h5>' +
-          '</div>' +
+          '<div class="prov-header"><h5>🌳 Evidence Hierarchy</h5></div>' +
           '<div id="' + provId + '" class="prov-tree"></div>' +
         '</div>' +
       '</div>'
@@ -236,14 +224,12 @@
     if (!t) return;
     out.innerHTML = '<div class="glass-field result-card"><h4>Searching…</h4>' +
                     '<div class="loading-bar"></div></div>';
-
     var p;
     if (looksLikeAccession(t)) {
       p = window.BioAPI.fetchProtein(t).then(function (r) { return [r]; });
     } else {
       p = window.BioAPI.searchProteins(t, 5);
     }
-
     p.then(function (results) {
       if (!results || !results.length) {
         out.innerHTML = '<div class="glass-field result-card"><h4>No results</h4></div>';
@@ -252,14 +238,10 @@
       out.innerHTML = '<div class="glass-field result-card"><h4>Checking sources…</h4>' +
                       '<div class="loading-bar"></div></div>';
       var pmids = collectAllPmids(results);
-      console.log("[app] checking", pmids.length, "PMIDs");
-
       return window.Retraction.checkPmids(pmids).then(function (retractions) {
         out.innerHTML = results.map(function (r) {
           return renderProtein(r, retractions);
         }).join("");
-
-        // Auto-build all hierarchies
         results.forEach(function (r) {
           var acc = r.primaryAccession || "";
           var id = "prov-" + acc.replace(/[^A-Za-z0-9]/g, "_");
@@ -279,10 +261,9 @@
     q.value = params.get("q");
     setTimeout(run, 100);
   }
-
   go.addEventListener("click", run);
   q.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
-  console.log("[app] ready v13");
+  console.log("[app] ready v14");
 })();
 </script>
 </body></html>
