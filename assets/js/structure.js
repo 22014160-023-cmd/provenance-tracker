@@ -4,6 +4,7 @@
   var pdbIdCache = {};
   var activeViewer = null;
   var currentModel = null;
+  var liveMode = false;
 
   function getPDBIds(acc) {
     if (pdbIdCache[acc]) return Promise.resolve(pdbIdCache[acc]);
@@ -71,6 +72,8 @@
       '</svg>';
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   }
+
+  function resetLive() { liveMode = false; }
 
   function renderPreview(container, imageUrl, metaHtml, onPlay) {
     container.innerHTML = '';
@@ -253,6 +256,7 @@
           '" target="_blank" rel="noopener">' + pdbId + '</a>' +
           (pdbIds.length > 1 ? ' · +' + (pdbIds.length - 1) + ' more' : '') +
           ' · from ' + acc;
+        resetLive();
         renderPreview(container, pdbThumbnail(pdbId), meta, function () {
           mountLive3D(container, meta);
         });
@@ -266,6 +270,7 @@
           '🧬 <strong>Predicted structure</strong> · ' +
           '<a href="https://alphafold.ebi.ac.uk/entry/' + acc +
           '" target="_blank" rel="noopener">AlphaFold DB</a> · ' + acc;
+        resetLive();
         renderPreview(container, alphaFoldSvg(), meta, function () {
           mountLive3D(container, meta);
         });
@@ -331,7 +336,50 @@
     activeViewer = null;
   }
 
+  function startLive() {
+    var container = document.getElementById('collective-3d');
+    if (!container) return Promise.reject(new Error('no container'));
+    var metaEl = container.querySelector('.mol-meta');
+    var metaHtml = metaEl ? metaEl.innerHTML : '';
+    return new Promise(function (resolve, reject) {
+      try {
+        mountLive3D(container, metaHtml);
+        // Wait a bit for the viewer to attach
+        setTimeout(function () {
+          if (activeViewer) {
+            liveMode = true;
+            resolve(true);
+          } else {
+            reject(new Error('WebGL did not initialize'));
+          }
+        }, 400);
+      } catch (e) { reject(e); }
+    });
+  }
+
+  function isLive() { return liveMode; }
+
+  function toggleSpin() {
+    if (!activeViewer) return false;
+    try {
+      if (activeViewer.__paused) {
+        activeViewer.spin('y', 0.35);
+        activeViewer.render();
+        activeViewer.__paused = false;
+        return true;
+      } else {
+        activeViewer.spin('y', 0);
+        activeViewer.render();
+        activeViewer.__paused = true;
+        return false;
+      }
+    } catch (e) { return false; }
+  }
+
   window.Structure = {
+    startLive: startLive,
+    isLive: isLive,
+    toggleSpin: toggleSpin,
     stopActive: stopActive,
     renderFromSearch: renderFromSearch,
     tryOne: tryOne,

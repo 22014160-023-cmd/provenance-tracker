@@ -4,8 +4,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Search — BioOrigin</title>
 <link rel="icon" href="assets/img/favicon.svg"/>
-<link rel="stylesheet" href="assets/css/design-system.css?v=44"/>
-<link rel="stylesheet" href="assets/css/pages.css?v=44"/>
+<link rel="stylesheet" href="assets/css/design-system.css?v=45"/>
+<link rel="stylesheet" href="assets/css/pages.css?v=45"/>
 <style>
   .card-scroll{width:100%;padding-bottom:12px;}
   .collective-card{
@@ -93,6 +93,18 @@
     color:#fff;cursor:pointer;font-weight:600;font-family:inherit;
     touch-action:manipulation;transition:background 0.18s ease;}
   .view3d-btn:hover{background:rgba(255,255,255,0.24)}
+  .view3d-btn.play{
+    background:rgba(34,197,94,0.28);
+    border-color:rgba(34,197,94,0.65);
+    color:#d1fae5;
+  }
+  .view3d-btn.play:hover{background:rgba(34,197,94,0.45);}
+  .view3d-btn.play.playing{
+    background:rgba(255,255,255,0.14);
+    border-color:rgba(255,255,255,0.32);
+    color:#fff;
+  }
+  .view3d-btn[disabled]{opacity:0.5;cursor:not-allowed;}
   .view3d-btn.paused{background:rgba(34,197,94,0.22);border-color:rgba(34,197,94,0.55)}
 
   .mol-preview{
@@ -216,17 +228,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
-<script src="assets/js/config.js?v=44"></script>
-<script src="assets/js/bubbles.js?v=44"></script>
-<script src="assets/js/ui.js?v=44"></script>
-<script src="assets/js/api.js?v=44"></script>
-<script src="assets/js/evidence.js?v=44"></script>
-<script src="assets/js/retraction.js?v=44"></script>
-<script src="assets/js/impact.js?v=44"></script>
-<script src="assets/js/structure.js?v=44"></script>
-<script src="assets/js/collective.js?v=44"></script>
-<script src="assets/js/tree.js?v=44"></script>
-<script src="assets/js/pdf.js?v=44"></script>
+<script src="assets/js/config.js?v=45"></script>
+<script src="assets/js/bubbles.js?v=45"></script>
+<script src="assets/js/ui.js?v=45"></script>
+<script src="assets/js/api.js?v=45"></script>
+<script src="assets/js/evidence.js?v=45"></script>
+<script src="assets/js/retraction.js?v=45"></script>
+<script src="assets/js/impact.js?v=45"></script>
+<script src="assets/js/structure.js?v=45"></script>
+<script src="assets/js/collective.js?v=45"></script>
+<script src="assets/js/tree.js?v=45"></script>
+<script src="assets/js/pdf.js?v=45"></script>
 
 <script>
 (function () {
