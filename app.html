@@ -4,54 +4,40 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Search — Provenance Tracker</title>
 <link rel="icon" href="assets/img/favicon.svg"/>
-<link rel="stylesheet" href="assets/css/design-system.css?v=3"/>
-<link rel="stylesheet" href="assets/css/pages.css?v=3"/>
+<link rel="stylesheet" href="assets/css/design-system.css?v=5"/>
+<link rel="stylesheet" href="assets/css/pages.css?v=5"/>
 <style>
   .evidence-badge {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.4px;
-    text-transform: uppercase;
-    border: 1px solid currentColor;
-    margin-left: 8px;
-    vertical-align: middle;
+    display:inline-block; padding:3px 10px; border-radius:999px;
+    font-size:11px; font-weight:700; letter-spacing:0.4px;
+    text-transform:uppercase; border:1px solid currentColor;
+    margin-left:8px; vertical-align:middle;
   }
   .evidence-dot {
-    display: inline-block;
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    margin-right: 8px;
-    vertical-align: middle;
-    box-shadow: 0 0 8px currentColor;
+    display:inline-block; width:10px; height:10px;
+    border-radius:50%; margin-right:8px;
+    vertical-align:middle; box-shadow:0 0 8px currentColor;
   }
   .feature-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display:flex; align-items:flex-start; gap:10px;
+    padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.08);
   }
-  .feature-row:last-child { border-bottom: none; }
-  .feature-text { flex: 1; font-size: 13px; color: rgba(255,255,255,0.9); }
-  .feature-meta { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 4px; }
+  .feature-row:last-child { border-bottom:none; }
+  .feature-text { flex:1; font-size:13px; color:rgba(255,255,255,0.9); }
+  .feature-meta { font-size:11px; color:rgba(255,255,255,0.6); margin-top:4px; }
   .chain-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 12px;
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:12px;
   }
-  .chain-header h4 { font-size: 16px; }
+  .chain-header h4 { font-size:16px; }
   .summary-bar {
-    display: flex; gap: 8px; flex-wrap: wrap;
-    padding: 10px 0 16px;
-    border-bottom: 1px solid rgba(255,255,255,0.15);
-    margin-bottom: 12px;
+    display:flex; gap:8px; flex-wrap:wrap;
+    padding:10px 0 16px; border-bottom:1px solid rgba(255,255,255,0.15);
+    margin-bottom:12px;
   }
   .summary-pill {
-    padding: 4px 12px; border-radius: 999px;
-    font-size: 12px; font-weight: 600;
-    border: 1px solid currentColor;
+    padding:4px 12px; border-radius:999px;
+    font-size:12px; font-weight:600; border:1px solid currentColor;
   }
 </style>
 </head><body>
@@ -81,31 +67,31 @@
   </section>
 </main>
 
-<script src="assets/js/bubbles.js?v=3"></script>
-<script src="assets/js/ui.js?v=3"></script>
-<script src="assets/js/bioapi.js?v=3"></script>
-<script src="assets/js/evidence.js?v=3"></script>
+<script src="assets/js/config.js?v=5"></script>
+<script src="assets/js/bubbles.js?v=5"></script>
+<script src="assets/js/ui.js?v=5"></script>
+<script src="assets/js/api.js?v=5"></script>
+<script src="assets/js/evidence.js?v=5"></script>
 <script>
 const q = document.getElementById('q');
 const go = document.getElementById('go');
 const out = document.getElementById('out');
 
+// --- Accession detection: must contain at least one digit ---
+function looksLikeAccession(s) {
+  return /^[A-Z][A-Z0-9]{5,9}$/i.test(s) && /\d/.test(s);
+}
+
 function renderFeature(feature) {
   const codes = Evidence.extractCodes(feature);
   if (!codes.length) return '';
-
   const c = Evidence.classifyEvidence(codes);
   const desc = feature.description || feature.type || 'Feature';
   const positions = feature.location
     ? `${feature.location.start?.value ?? '?'}–${feature.location.end?.value ?? '?'}`
     : '';
-
   const sources = (feature.evidences || [])
-    .map(e => e.source)
-    .filter(Boolean)
-    .slice(0, 3)
-    .join(', ');
-
+    .map(e => e.source).filter(Boolean).slice(0, 3).join(', ');
   return `
     <div class="feature-row">
       <span class="evidence-dot" style="color:${c.color};background:${c.color}"></span>
@@ -122,10 +108,9 @@ function renderFeature(feature) {
 }
 
 function summarize(features) {
-  const tally = { high: 0, medium: 0, low: 0, very_low: 0, unknown: 0 };
+  const tally = { high:0, medium:0, low:0, very_low:0, unknown:0 };
   for (const f of features) {
-    const codes = Evidence.extractCodes(f);
-    const c = Evidence.classifyEvidence(codes);
+    const c = Evidence.classifyEvidence(Evidence.extractCodes(f));
     tally[c.tier] = (tally[c.tier] || 0) + 1;
   }
   return tally;
@@ -136,16 +121,15 @@ function renderProtein(r) {
   const name = r.proteinDescription?.recommendedName?.fullName?.value
                || r.uniProtkbId || 'Unknown';
   const org = r.organism?.scientificName || '';
-
   const features = (r.features || []).filter(f => Evidence.extractCodes(f).length > 0);
   const tally = summarize(features);
 
+  const colors = { high:'#22c55e', medium:'#eab308', low:'#f97316',
+                   very_low:'#ef4444', unknown:'#9ca3af' };
   const pills = Object.entries(tally)
     .filter(([, n]) => n > 0)
-    .map(([tier, n]) => {
-      const colors = { high:'#22c55e', medium:'#eab308', low:'#f97316', very_low:'#ef4444', unknown:'#9ca3af' };
-      return `<span class="summary-pill" style="color:${colors[tier]}">${n} ${tier}</span>`;
-    }).join('');
+    .map(([tier, n]) => `<span class="summary-pill" style="color:${colors[tier]}">${n} ${tier}</span>`)
+    .join('');
 
   const featureRows = features.length
     ? features.map(renderFeature).join('')
@@ -165,13 +149,16 @@ function renderProtein(r) {
 async function run() {
   const t = q.value.trim();
   if (!t) return;
+
   out.innerHTML = `<div class="glass-field result-card"><h4>Searching…</h4></div>`;
 
   try {
     let results;
-    if (/^[A-Z0-9]{6,10}$/i.test(t)) {
+    if (looksLikeAccession(t)) {
+      console.log('[app] treating as accession:', t);
       results = [await BioAPI.fetchProtein(t)];
     } else {
+      console.log('[app] treating as keyword:', t);
       results = await BioAPI.searchProteins(t, 5);
     }
 
@@ -179,7 +166,6 @@ async function run() {
       out.innerHTML = `<div class="glass-field result-card"><h4>No results</h4></div>`;
       return;
     }
-
     out.innerHTML = results.map(renderProtein).join('');
   } catch (e) {
     out.innerHTML = `<div class="glass-field result-card"><h4>Error: ${e.message}</h4></div>`;
