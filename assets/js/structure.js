@@ -1,11 +1,12 @@
-// structure.js — CORS-safe 3D viewer (v34, clean)
+// structure.js — lazy WebGL: PNG preview first, live 3D on demand
 (function () {
   var pdbIdCache = {};
   var activeViewer = null;
-  var spinPaused = true;   // start paused — user opts in to rotation
-  var lastKnownSpin = 0.35;
+  var currentModel = null;       // { data, format, source }
+  var currentContainer = null;
+  var liveRendered = false;
 
-  // ---------- STEP 1: get PDB IDs from UniProt crossreferences ----------
+  // ---------- STEP 1: PDB IDs from UniProt crossrefs ----------
   function getPDBIds(acc) {
     if (pdbIdCache[acc]) return Promise.resolve(pdbIdCache[acc]);
     return fetch("https://rest.uniprot.org/uniprotkb/" +
@@ -24,7 +25,7 @@
       });
   }
 
-  // ---------- STEP 2: fetch BinaryCIF from models.rcsb.org ----------
+  // ---------- STEP 2: BCIF from models.rcsb.org ----------
   function fetchBCIF(pdbId) {
     return fetch("https://models.rcsb.org/" + pdbId.toLowerCase() + ".bcif")
       .then(function (r) {
@@ -33,7 +34,7 @@
       });
   }
 
-  // ---------- STEP 3: AlphaFold dynamic URL via API ----------
+  // ---------- STEP 3: AlphaFold API ----------
   function fetchAlphaFold(acc) {
     return fetch("https://alphafold.ebi.ac.uk/api/prediction/" +
                  encodeURIComponent(acc))
@@ -52,43 +53,94 @@
       });
   }
 
-  // ---------- Stop current viewer ----------
-  function pauseSpin() {
-    if (!activeViewer) return;
-    spinPaused = true;
-    try {
-      if (activeViewer.spin && typeof activeViewer.spin === 'function') {
-        activeViewer.spin('y', 0);
-      }
-    } catch (e) {}
+  // ---------- RCSB PNG thumbnail URL ----------
+  // RCSB serves curated preview images for every PDB entry.
+  // These are pre-rendered — no WebGL, no GPU cost, instant.
+  function pdbThumbnailUrl(pdbId) {
+    var id = pdbId.toUpperCase();
+    // RCSB's assembly image (large, cached at their CDN)
+    return "https://cdn.rcsb.org/images/structures/" +
+           id.toLowerCase() + "_assembly-1.jpeg";
   }
 
-  function resumeSpin() {
-    if (!activeViewer) return;
-    spinPaused = false;
-    try {
-      activeViewer.spin('y', lastKnownSpin);
-      activeViewer.render();
-    } catch (e) {}
-  }
+  // ---------- Render: PNG preview (no WebGL) ----------
+  function renderPreview(imgUrl, container, metaHtml, onPlay) {
+    container.innerHTML = '';
 
-  function toggleSpin() {
-    if (spinPaused) resumeSpin();
-    else pauseSpin();
-    return !spinPaused;   // returns true if now spinning
-  }
+    var wrap = document.createElement('div');
+    wrap.className = 'mol-preview';
+    wrap.style.cssText =
+      'width:100%;height:100%;display:flex;align-items:center;' +
+      'justify-content:center;position:relative;overflow:hidden;';
 
-  function isSpinning() { return !spinPaused; }
+    var img = document.createElement('img');
+    img.src = imgUrl;
+    img.alt = 'Structure preview';
+    img.style.cssText =
+      'max-width:90%;max-height:90%;object-fit:contain;' +
+      'filter:drop-shadow(0 8px 24px rgba(0,0,0,0.45));' +
+      'transition:transform 0.3s ease;';
+    img.addEventListener('mouseenter', function () {
+      img.style.transform = 'scale(1.03)';
+    });
+    img.addEventListener('mouseleave', function () {
+      img.style.transform = 'scale(1)';
+    });
+    img.onerror = function () {
+      // Fallback if RCSB image missing — show simple SVG
+      wrap.innerHTML = '<div class="mol-empty">' +
+        'Static preview unavailable — tap Play to load live 3D</div>';
+    };
 
-  function stopActive() {
-    if (activeViewer && activeViewer.stopAnimate) {
-      try { activeViewer.stopAnimate(); } catch (e) {}
+    wrap.appendChild(img);
+
+    // Play overlay button (big, central)
+    var overlay = document.createElement('button');
+    overlay.className = 'mol-play-overlay';
+    overlay.innerHTML =
+      '<svg viewBox="0 0 24 24" width="40" height="40" fill="currentColor">' +
+        '<path d="M8 5v14l11-7z"/>' +
+      '</svg>';
+    overlay.style.cssText =
+      'position:absolute;bottom:14px;left:50%;' +
+      'transform:translateX(-50%);' +
+      'width:64px;height:64px;border-radius:50%;' +
+      'background:rgba(34,197,94,0.85);' +
+      'border:2px solid rgba(255,255,255,0.55);' +
+      'color:#fff;cursor:pointer;' +
+      'box-shadow:0 8px 28px rgba(34,197,94,0.55);' +
+      'display:flex;align-items:center;justify-content:center;' +
+      'transition:all 0.18s ease;z-index:6;' +
+      'touch-action:manipulation;';
+    overlay.addEventListener('click', onPlay);
+    overlay.addEventListener('touchstart', function () {
+      overlay.style.transform = 'translateX(-50%) scale(0.94)';
+    }, { passive: true });
+    overlay.addEventListener('touchend', function () {
+      overlay.style.transform = 'translateX(-50%) scale(1)';
+    });
+    wrap.appendChild(overlay);
+
+    container.appendChild(wrap);
+
+    // meta
+    if (metaHtml) {
+      var meta = document.createElement('div');
+      meta.className = 'mol-meta';
+      meta.innerHTML = metaHtml;
+      container.appendChild(meta);
     }
-    activeViewer = null;
   }
 
-  // ---------- Render ----------
-  function renderModel(model, format, container, metaHtml) {
+  // ---------- Render: live WebGL 3D ----------
+  function mountLive3D(container, metaHtml) {
+    if (!currentModel) return;
+    if (!window.$3Dmol) {
+      container.innerHTML =
+        '<div class="mol-empty">3Dmol.js failed to load</div>';
+      return;
+    }
+
     container.innerHTML = '';
 
     var height = 380;
@@ -102,24 +154,17 @@
       'display:block;position:relative;';
     container.appendChild(canvas);
 
-    if (!window.$3Dmol) {
-      container.innerHTML =
-        '<div class="mol-empty">3D viewer failed to load (3Dmol.js CDN)</div>';
-      return;
-    }
-
-    // Let the DOM lay out the canvas before WebGL init
     setTimeout(function () {
       try {
+        if (activeViewer && activeViewer.clear) {
+          try { activeViewer.clear(); } catch (e) {}
+        }
         var viewer = window.$3Dmol.createViewer(canvas, {
           backgroundColor: 'rgba(20,15,45,0.55)',
           antialias: false
         });
-
         activeViewer = viewer;
-
-        viewer.addModel(model, format);
-
+        viewer.addModel(currentModel.data, currentModel.format);
         viewer.setStyle({}, {
           cartoon: {
             color: 'spectrum',
@@ -128,78 +173,152 @@
             thickness: 0.5
           }
         });
-
         try {
-          viewer.setStyle(
-            { hetflag: true },
-            {
-              stick: { radius: 0.15, colorscheme: 'greenCarbon' },
-              sphere: { radius: 0.25 }
-            }
-          );
+          viewer.setStyle({ hetflag: true }, {
+            stick: { radius: 0.15, colorscheme: 'greenCarbon' },
+            sphere: { radius: 0.25 }
+          });
         } catch (e) {}
-
         viewer.zoomTo();
         viewer.zoom(1.05);
-        // Respect the current pause state
-        if (spinPaused) {
-          viewer.spin('y', 0);
-        } else {
-          viewer.spin('y', lastKnownSpin);
-        }
+        viewer.spin('y', 0.35);
         viewer.render();
+        liveRendered = true;
 
-        // Force a resize after layout
         setTimeout(function () {
-          try {
-            viewer.resize();
-            viewer.render();
-          } catch (e) {}
+          try { viewer.resize(); viewer.render(); } catch (e) {}
         }, 200);
 
-        // Metadata line
-        var meta = document.createElement('div');
-        meta.className = 'mol-meta';
-        meta.innerHTML = metaHtml;
-        container.appendChild(meta);
-
+        if (metaHtml) {
+          var meta = document.createElement('div');
+          meta.className = 'mol-meta';
+          meta.innerHTML = metaHtml;
+          container.appendChild(meta);
+        }
       } catch (e) {
-        console.error("[Structure] render failed:", e);
+        console.error("[Structure] live mount failed:", e);
         container.innerHTML =
           '<div class="mol-empty">Render error: ' + e.message + '</div>';
       }
-    }, 80);
+    }, 40);
   }
 
-  // ---------- Try one protein ----------
-  function tryOne(acc, container) {
+  // ---------- Stop / pause / resume ----------
+  function stopActive() {
+    if (activeViewer && activeViewer.stopAnimate) {
+      try { activeViewer.stopAnimate(); } catch (e) {}
+    }
+    activeViewer = null;
+    liveRendered = false;
+  }
+
+  function pauseSpin() {
+    if (!activeViewer) return false;
+    try { activeViewer.spin('y', 0); activeViewer.render(); } catch (e) {}
+    return false;
+  }
+
+  function resumeSpin() {
+    if (!activeViewer) return false;
+    try {
+      activeViewer.spin('y', 0.35);
+      activeViewer.render();
+    } catch (e) {}
+    return true;
+  }
+
+  function toggleSpin() {
+    if (!liveRendered) return true;   // not yet live → treat as start
+    if (!activeViewer) return false;
+    // Check if spinning by seeing if viewer has an active spin
+    // Simplest approach: track a flag
+    if (activeViewer.__paused) {
+      activeViewer.__paused = false;
+      return resumeSpin();
+    }
+    activeViewer.__paused = true;
+    return pauseSpin();
+  }
+
+  function isLive() { return liveRendered; }
+
+  // ---------- tryOne: choose PDB or AlphaFold ----------
+  function tryOne(acc, container, onReady) {
     return getPDBIds(acc).then(function (pdbIds) {
       if (!pdbIds || !pdbIds.length) throw new Error("no PDB crossrefs");
       var pdbId = pdbIds[0];
-      console.log("[Structure] Trying PDB", pdbId, "for", acc);
       return fetchBCIF(pdbId).then(function (buf) {
-        renderModel(buf, 'bcif', container,
+        currentModel = { data: buf, format: 'bcif', pdbId: pdbId, acc: acc };
+        currentContainer = container;
+        var meta =
           '🧬 <strong>Experimental structure</strong> · ' +
           'PDB <a href="https://www.rcsb.org/structure/' + pdbId +
           '" target="_blank">' + pdbId + '</a>' +
-          (pdbIds.length > 1
-            ? ' · +' + (pdbIds.length - 1) + ' more' : '') +
-          ' · from ' + acc);
+          (pdbIds.length > 1 ? ' · +' + (pdbIds.length - 1) + ' more' : '') +
+          ' · from ' + acc;
+
+        // Show static preview by default
+        var previewUrl = pdbThumbnailUrl(pdbId);
+        renderPreview(previewUrl, container, meta, function () {
+          // user tapped Play → mount live WebGL
+          if (onReady) onReady();
+          mountLive3D(container, meta);
+          // mark viewer as not paused (spinning)
+          if (activeViewer) activeViewer.__paused = false;
+          if (window.PlayState) window.PlayState.set(true);
+        });
+
+        // Reset play state — waiting for user
+        if (window.PlayState) window.PlayState.set(false);
         return true;
       });
     }).catch(function (e) {
       console.log("[Structure] PDB failed:", e.message, "→ AlphaFold");
       return fetchAlphaFold(acc).then(function (pdbText) {
-        renderModel(pdbText, 'pdb', container,
+        currentModel = { data: pdbText, format: 'pdb', acc: acc };
+        currentContainer = container;
+        var meta =
           '🧬 <strong>Predicted structure</strong> · ' +
           '<a href="https://alphafold.ebi.ac.uk/entry/' + acc +
-          '" target="_blank">AlphaFold DB</a> · ' + acc);
+          '" target="_blank">AlphaFold DB</a> · ' + acc;
+
+        // AlphaFold has no PNG preview — use a colored SVG placeholder
+        renderPreview(alphaFoldPreviewSvg(), container, meta, function () {
+          if (onReady) onReady();
+          mountLive3D(container, meta);
+          if (activeViewer) activeViewer.__paused = false;
+          if (window.PlayState) window.PlayState.set(true);
+        });
+
+        if (window.PlayState) window.PlayState.set(false);
         return true;
       }).catch(function (e2) {
         console.log("[Structure] AlphaFold failed:", e2.message);
         return false;
       });
     });
+  }
+
+  // Inline SVG data URL for AlphaFold preview
+  function alphaFoldPreviewSvg() {
+    var svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">' +
+        '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+          '<stop offset="0%" stop-color="#a78bfa"/>' +
+          '<stop offset="50%" stop-color="#f472b6"/>' +
+          '<stop offset="100%" stop-color="#60a5fa"/>' +
+        '</linearGradient></defs>' +
+        '<path d="M 90 40 Q 210 90 90 150 Q -30 210 90 260" ' +
+          'stroke="url(#g)" stroke-width="14" fill="none" ' +
+          'stroke-linecap="round"/>' +
+        '<path d="M 210 40 Q 90 90 210 150 Q 330 210 210 260" ' +
+          'stroke="url(#g)" stroke-width="14" fill="none" ' +
+          'stroke-linecap="round"/>' +
+        '<text x="150" y="290" text-anchor="middle" ' +
+          'fill="#fff" font-size="12" font-family="sans-serif">' +
+          'AlphaFold predicted structure</text>' +
+      '</svg>';
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   }
 
   // ---------- Rank candidates ----------
@@ -224,13 +343,13 @@
     });
   }
 
-  // ---------- Entry for search result set ----------
+  // ---------- Entry from search result set ----------
   function renderFromSearch(proteins, container) {
     container.innerHTML =
       '<div class="mol-loading">Finding a representative structure…' +
       '<div class="loading-bar"></div>' +
       '<div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:8px">' +
-      'Trying up to 5 proteins from your search</div></div>';
+      'Static preview loads first · tap Play to spin</div></div>';
 
     var ranked = rankCandidates(proteins).slice(0, 5);
     var idx = 0;
@@ -254,14 +373,12 @@
     wrap.style.cssText =
       'width:100%;height:100%;display:flex;align-items:center;' +
       'justify-content:center;position:relative;min-height:280px;';
-
     var ns = 'http://www.w3.org/2000/svg';
     var svg = document.createElementNS(ns, 'svg');
     svg.setAttribute('viewBox', '-100 -100 200 200');
     svg.style.cssText =
       'width:180px;height:180px;animation:spin3d 6s linear infinite;' +
       'transform-style:preserve-3d;';
-
     var defs = document.createElementNS(ns, 'defs');
     defs.innerHTML =
       '<linearGradient id="fbGrad" x1="0" y1="0" x2="1" y2="1">' +
@@ -270,7 +387,6 @@
         '<stop offset="100%" stop-color="#60a5fa"/>' +
       '</linearGradient>';
     svg.appendChild(defs);
-
     [['M -50 -60 Q 50 -30 -50 0 Q 50 30 -50 60'],
      ['M 50 -60 Q -50 -30 50 0 Q -50 30 50 60']].forEach(function (arr) {
       var p = document.createElementNS(ns, 'path');
@@ -281,7 +397,6 @@
       p.setAttribute('stroke-linecap', 'round');
       svg.appendChild(p);
     });
-
     [-40, -20, 0, 20, 40].forEach(function (y) {
       var l = document.createElementNS(ns, 'line');
       l.setAttribute('x1', '-40'); l.setAttribute('y1', y);
@@ -291,10 +406,8 @@
       l.setAttribute('opacity', '0.55');
       svg.appendChild(l);
     });
-
     wrap.appendChild(svg);
     container.appendChild(wrap);
-
     if (!document.getElementById('spin3dKeyframe')) {
       var style = document.createElement('style');
       style.id = 'spin3dKeyframe';
@@ -312,11 +425,11 @@
     pauseSpin: pauseSpin,
     resumeSpin: resumeSpin,
     toggleSpin: toggleSpin,
-    isSpinning: isSpinning,
+    isLive: isLive,
     renderFromSearch: renderFromSearch,
     getPDBIds: getPDBIds,
     tryOne: tryOne,
     render: function (acc, container) { tryOne(acc, container); }
   };
-  console.log('[Structure] ready v34');
+  console.log('[Structure] ready v38 — lazy WebGL');
 })();

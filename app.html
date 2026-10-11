@@ -4,8 +4,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Search — BioOrigin</title>
 <link rel="icon" href="assets/img/favicon.svg"/>
-<link rel="stylesheet" href="assets/css/design-system.css?v=37"/>
-<link rel="stylesheet" href="assets/css/pages.css?v=37"/>
+<link rel="stylesheet" href="assets/css/design-system.css?v=38"/>
+<link rel="stylesheet" href="assets/css/pages.css?v=38"/>
 <style>
   .card-scroll{width:100%;padding-bottom:12px;}
   .collective-card{
@@ -95,6 +95,22 @@
   .view3d-btn:hover{background:rgba(255,255,255,0.24)}
   .view3d-btn.paused{background:rgba(34,197,94,0.22);border-color:rgba(34,197,94,0.55)}
 
+  .mol-preview{
+    width:100%;height:100%;display:flex;align-items:center;
+    justify-content:center;position:relative;overflow:hidden;
+  }
+  .mol-preview img{
+    max-width:88%;max-height:88%;object-fit:contain;
+    filter:drop-shadow(0 10px 32px rgba(0,0,0,0.5));
+    transition:transform 0.3s ease;border-radius:8px;
+  }
+  .mol-play-overlay{
+    transition:transform 0.18s ease,background 0.18s ease;
+  }
+  .mol-play-overlay:hover{
+    background:rgba(34,197,94,0.95)!important;
+    transform:translateX(-50%) scale(1.08)!important;
+  }
   .mol-loading,.mol-empty{font-size:12px;color:rgba(255,255,255,0.7);
     padding:28px;text-align:center;font-style:italic;}
   .mol-meta{font-size:11px;color:rgba(255,255,255,0.6);
@@ -200,17 +216,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
-<script src="assets/js/config.js?v=37"></script>
-<script src="assets/js/bubbles.js?v=37"></script>
-<script src="assets/js/ui.js?v=37"></script>
-<script src="assets/js/api.js?v=37"></script>
-<script src="assets/js/evidence.js?v=37"></script>
-<script src="assets/js/retraction.js?v=37"></script>
-<script src="assets/js/impact.js?v=37"></script>
-<script src="assets/js/structure.js?v=37"></script>
-<script src="assets/js/collective.js?v=37"></script>
-<script src="assets/js/tree.js?v=37"></script>
-<script src="assets/js/pdf.js?v=37"></script>
+<script src="assets/js/config.js?v=38"></script>
+<script src="assets/js/bubbles.js?v=38"></script>
+<script src="assets/js/ui.js?v=38"></script>
+<script src="assets/js/api.js?v=38"></script>
+<script src="assets/js/evidence.js?v=38"></script>
+<script src="assets/js/retraction.js?v=38"></script>
+<script src="assets/js/impact.js?v=38"></script>
+<script src="assets/js/structure.js?v=38"></script>
+<script src="assets/js/collective.js?v=38"></script>
+<script src="assets/js/tree.js?v=38"></script>
+<script src="assets/js/pdf.js?v=38"></script>
 
 <script>
 (function () {
@@ -410,17 +426,7 @@
       });
     }
 
-    // Spin toggle button
-    var spinBtn = document.getElementById('spin-toggle');
-    if (spinBtn) {
-      spinBtn.addEventListener('click', function () {
-        if (!window.Structure) return;
-        var spinning = window.Structure.toggleSpin();
-        spinBtn.textContent = spinning ? '⏸ Pause' : '▶ Play';
-        spinBtn.classList.toggle('paused', !spinning);
-        if (navigator.vibrate) navigator.vibrate(6);
-      });
-    }
+
   }
 
   function setupActions(proteins, retractions) {
