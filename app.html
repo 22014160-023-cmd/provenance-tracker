@@ -1,297 +1,286 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover"/>
 <title>Search — Provenance Tracker</title>
 <link rel="icon" href="assets/img/favicon.svg"/>
-<link rel="stylesheet" href="assets/css/design-system.css?v=19"/>
-<link rel="stylesheet" href="assets/css/pages.css?v=19"/>
+<link rel="stylesheet" href="assets/css/design-system.css?v=22"/>
+<link rel="stylesheet" href="assets/css/pages.css?v=22"/>
 <style>
-  /* =========================================================
-     Card grid layout (desktop-first)
-     ========================================================= */
-  .result-card{
-    display:grid;
-    grid-template-columns: 300px 1fr;
-    grid-template-areas:
-      "header  header"
-      "summary summary"
-      "mol     charts"
-      "tree    impact"
-      "table   table";
-    gap: 18px 22px;
-    padding: 22px 24px 26px;
-    border-radius: 18px;
-    background: rgba(255,255,255,0.025);
-    border: 1px solid rgba(255,255,255,0.20);
-    backdrop-filter: blur(6px);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.20),
-                0 8px 24px rgba(0,0,0,0.20);
-    margin-bottom: 22px;
-    align-items: start;
+  /* ============================================================
+     Collective dashboard layout
+     ============================================================ */
+  .collective-card{
+    border-radius:20px;
+    padding:22px 24px 28px;
+    background:rgba(255,255,255,0.035);
+    border:1px solid rgba(255,255,255,0.22);
+    backdrop-filter:blur(8px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.22),
+               0 10px 30px rgba(0,0,0,0.22);
+    margin-bottom:24px;
   }
-  @media (max-width: 900px){
-    .result-card{
-      grid-template-columns: 1fr;
-      grid-template-areas:
-        "header" "summary" "mol" "charts" "tree" "impact" "table";
-    }
-  }
-
-  .grid-header{grid-area: header}
-  .grid-summary{grid-area: summary}
-  .grid-mol{grid-area: mol}
-  .grid-charts{grid-area: charts}
-  .grid-tree{grid-area: tree}
-  .grid-impact{grid-area: impact}
-  .grid-table{grid-area: table}
-
-  /* Header */
-  .chain-header{
+  .collective-header{
     display:flex;
     justify-content:space-between;
     align-items:flex-start;
     gap:14px;
     flex-wrap:wrap;
-    margin:0;
+    margin-bottom:16px;
   }
-  .chain-header h4{
-    font-size:17px;
+  .collective-header h2{
+    font-size:20px;
     letter-spacing:-0.2px;
-    line-height:1.3;
-    margin-bottom:4px;
+    margin-bottom:6px;
   }
-  .chain-header small{
+  .collective-header .meta{
     font-size:12px;
-    color:rgba(255,255,255,0.6);
+    color:rgba(255,255,255,0.62);
   }
-  .chain-actions{display:flex;gap:8px;flex-shrink:0}
+  .collective-actions{display:flex;gap:8px;flex-wrap:wrap}
 
-  .pdf-btn{
+  .action-btn{
     font-size:11.5px;
     padding:8px 14px;
     border-radius:9px;
-    background:rgba(239,68,68,0.16);
-    border:1px solid rgba(239,68,68,0.55);
-    color:#fecaca;
+    background:rgba(255,255,255,0.10);
+    border:1px solid rgba(255,255,255,0.35);
+    color:#fff;
     cursor:pointer;
     font-weight:600;
-    letter-spacing:0.2px;
     transition:all 0.18s ease;
     font-family:inherit;
+    touch-action:manipulation;
+    min-height:36px;
   }
-  .pdf-btn:hover{
-    background:rgba(239,68,68,0.28);
+  .action-btn:hover, .action-btn:active{
+    background:rgba(255,255,255,0.18);
     transform:translateY(-1px);
+  }
+  .action-btn.primary{
+    background:rgba(239,68,68,0.16);
+    border-color:rgba(239,68,68,0.55);
+    color:#fecaca;
+  }
+  .action-btn.primary:hover, .action-btn.primary:active{
+    background:rgba(239,68,68,0.28);
     box-shadow:0 4px 14px rgba(239,68,68,0.28);
   }
-  .pdf-btn:disabled{opacity:0.5;cursor:wait;transform:none}
 
-  /* Summary bar */
+  /* Summary pills */
   .summary-bar{
-    display:flex;
-    gap:8px;
-    flex-wrap:wrap;
-    padding:0 0 14px;
+    display:flex;gap:8px;flex-wrap:wrap;
+    padding:0 0 16px;
     border-bottom:1px solid rgba(255,255,255,0.10);
-    margin:0;
+    margin-bottom:18px;
   }
   .summary-pill{
-    padding:4px 12px;
+    padding:5px 13px;
     border-radius:999px;
-    font-size:11.5px;
+    font-size:12px;
     font-weight:600;
     letter-spacing:0.2px;
     border:1px solid currentColor;
     background:rgba(255,255,255,0.03);
   }
 
-  /* Retraction banner */
-  .retract-banner{
-    display:flex;align-items:center;gap:12px;
-    padding:12px 14px;
-    background:rgba(239,68,68,0.14);
-    border:1px solid rgba(239,68,68,0.55);
-    border-left:3px solid #ef4444;
-    border-radius:10px;
-    font-size:12.5px;
-    color:#fff;
-    line-height:1.5;
-    grid-column:1/-1;
-  }
-  .retract-banner .icon{font-size:18px;flex-shrink:0}
-  .retract-banner strong{color:#fecaca}
-
-  /* Section headers */
-  .grid-section-title{
-    font-size:11px;
-    letter-spacing:0.8px;
-    text-transform:uppercase;
-    color:rgba(255,255,255,0.92);
-    margin-bottom:10px;
-    font-weight:700;
+  /* ============================================================
+     Swipeable tabs — touch UX
+     ============================================================ */
+  .tab-strip{
     display:flex;
-    align-items:center;
-    gap:10px;
-  }
-  .grid-section-title::before{
-    content:"";
-    display:inline-block;
-    width:3px;
-    height:13px;
-    border-radius:2px;
-    background:linear-gradient(180deg,#a78bfa,#ec4899);
-    box-shadow:0 0 8px rgba(236,72,153,0.5);
-  }
-
-  /* 3D viewer */
-  .mol-canvas{
-    width:100%;
-    height:340px;
+    gap:6px;
+    padding:6px;
+    margin-bottom:16px;
     border-radius:12px;
-    background:radial-gradient(circle at 50% 40%,
-      rgba(99,102,241,0.10),rgba(255,255,255,0.02));
+    background:rgba(255,255,255,0.05);
     border:1px solid rgba(255,255,255,0.12);
-    overflow:hidden;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,0.15);
+    overflow-x:auto;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+    scroll-snap-type:x mandatory;
   }
-  .mol-loading,.mol-empty{
-    font-size:12px;color:rgba(255,255,255,0.65);
-    padding:24px;text-align:center;font-style:italic;
+  .tab-strip::-webkit-scrollbar{display:none}
+  .tab-btn{
+    flex-shrink:0;
+    padding:9px 16px;
+    border:none;
+    border-radius:9px;
+    background:transparent;
+    color:rgba(255,255,255,0.75);
+    font-size:12.5px;
+    font-weight:600;
+    font-family:inherit;
+    cursor:pointer;
+    transition:all 0.18s ease;
+    min-height:38px;
+    touch-action:manipulation;
+    scroll-snap-align:start;
+    white-space:nowrap;
   }
-  .mol-meta{
-    font-size:11px;
-    color:rgba(255,255,255,0.6);
-    margin-top:8px;
-    text-align:center;
+  .tab-btn:hover{color:#fff;background:rgba(255,255,255,0.08)}
+  .tab-btn.active{
+    background:rgba(255,255,255,0.16);
+    color:#fff;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.25);
   }
-  .mol-meta a{color:#fbcfe8;text-decoration:none;
-              border-bottom:1px dotted rgba(251,207,232,0.4)}
-  .mol-meta a:hover{border-bottom-style:solid;border-bottom-color:#fbcfe8}
 
-  /* Plotly charts 2x2 */
-  .charts-grid{
+  .tab-panel{display:none;animation:fadeIn 0.25s ease}
+  .tab-panel.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* ============================================================
+     Plotly charts grid
+     ============================================================ */
+  .chart-grid{
     display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:12px;
+    gap:16px;
   }
-  @media (max-width:640px){
-    .charts-grid{grid-template-columns:1fr}
-  }
+  @media (min-width:820px){.chart-grid{grid-template-columns:1fr 1fr}}
+
   .chart-box{
-    padding:10px 10px 4px;
-    border-radius:12px;
+    padding:8px 10px 4px;
+    border-radius:14px;
     background:rgba(255,255,255,0.035);
     border:1px solid rgba(255,255,255,0.13);
     box-shadow:inset 0 1px 0 rgba(255,255,255,0.12);
-    height:230px;
+    height:340px;
     position:relative;
     overflow:hidden;
   }
-  .chart-box > div{width:100%;height:100%}
+  .chart-box > div{width:100%;height:100%;touch-action:manipulation}
 
-  /* Tree */
-  .tree-box{
+  @media (max-width:700px){
+    .chart-box{height:300px}
+  }
+
+  /* Hint pill for touch gestures */
+  .touch-hint{
+    position:absolute;
+    top:12px;
+    right:12px;
+    font-size:10.5px;
+    padding:4px 10px;
+    border-radius:999px;
+    background:rgba(79,70,229,0.25);
+    border:1px solid rgba(139,92,246,0.55);
+    color:#e9d5ff;
+    font-weight:600;
+    pointer-events:none;
+    animation:hintFade 4s ease forwards;
+    z-index:5;
+  }
+  @keyframes hintFade{
+    0%{opacity:0;transform:translateY(-4px)}
+    15%,80%{opacity:1;transform:none}
+    100%{opacity:0}
+  }
+
+  /* ============================================================
+     Protein list (compact)
+     ============================================================ */
+  .protein-list{display:grid;gap:10px}
+  .protein-item{
+    padding:14px 16px;
     border-radius:12px;
     background:rgba(255,255,255,0.03);
-    border:1px solid rgba(255,255,255,0.12);
-    padding:12px;
-    min-height:220px;
-    overflow:auto;
+    border:1px solid rgba(255,255,255,0.14);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    transition:background 0.18s ease, border-color 0.18s ease;
+    cursor:pointer;
+    text-decoration:none;
+    color:inherit;
+    min-height:64px;
   }
-  .tree-loading,.tree-empty{
-    font-size:12px;color:rgba(255,255,255,0.6);
-    font-style:italic;padding:18px;text-align:center;
+  .protein-item:hover, .protein-item:active{
+    background:rgba(255,255,255,0.06);
+    border-color:rgba(255,255,255,0.32);
   }
-
-  /* Impact */
-  .impact-title{
-    font-size:11px;letter-spacing:0.8px;text-transform:uppercase;
-    color:#fecaca;margin-bottom:10px;font-weight:700;
-    display:flex;align-items:center;gap:10px;
+  .protein-item-info{flex:1;min-width:0}
+  .protein-item h4{
+    font-size:14px;
+    margin-bottom:4px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    letter-spacing:-0.1px;
   }
-  .impact-title::before{
-    content:"";display:inline-block;width:3px;height:13px;border-radius:2px;
-    background:linear-gradient(180deg,#f87171,#dc2626);
-    box-shadow:0 0 8px rgba(220,38,38,0.5);
+  .protein-item .meta{
+    font-size:11.5px;
+    color:rgba(255,255,255,0.58);
+    font-family:ui-monospace,SFMono-Regular,monospace;
   }
-  .impact-empty{font-size:12px;color:rgba(255,255,255,0.55);
-                font-style:italic;padding:8px 0}
-  .impact-block{
-    padding:12px;border-radius:10px;margin-bottom:10px;
-    background:rgba(239,68,68,0.08);
-    border:1px solid rgba(239,68,68,0.4);
-    border-left:3px solid #ef4444;
+  .protein-item .tier-pills{
+    display:flex;
+    gap:4px;
+    flex-shrink:0;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+    max-width:180px;
   }
-  .impact-pmid{font-size:12px;font-weight:700;color:#fecaca;margin-bottom:4px}
-  .impact-tag{background:#ef4444;color:#fff;padding:2px 7px;border-radius:4px;
-              font-size:9.5px;font-weight:800;letter-spacing:0.5px;margin-right:6px}
-  .impact-paper{font-size:11.5px;color:rgba(255,255,255,0.82);
-                margin-bottom:8px;line-height:1.5;font-style:italic}
-  .impact-count{font-size:12.5px;color:#fff;margin:8px 0}
-  .impact-count strong{color:#fecaca;font-size:16px}
-  .impact-protein{display:flex;gap:8px;align-items:baseline;font-size:11.5px;
-                  padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.06)}
-  .impact-protein a{color:#fbcfe8;text-decoration:none;font-weight:700;
-                    font-family:ui-monospace,monospace;min-width:68px}
-  .impact-protein small{color:rgba(255,255,255,0.45);font-style:italic;
-                        font-size:10.5px;margin-left:auto}
-  .impact-total{font-size:13px;color:#fff;padding:10px 0 4px;
-                text-align:center;font-weight:600}
-  .impact-total strong{color:#fecaca;font-size:18px}
-
-  /* Feature table */
-  .feature-table{
-    width:100%;
-    border-collapse:collapse;
-    font-size:12px;
-  }
-  .feature-table th{
-    text-align:left;
-    padding:9px 10px;
-    font-size:10.5px;
-    letter-spacing:0.5px;
-    text-transform:uppercase;
-    color:rgba(255,255,255,0.65);
-    border-bottom:1px solid rgba(255,255,255,0.18);
-    font-weight:700;
-    position:sticky;
-    top:0;
-    background:rgba(30,27,75,0.6);
-    backdrop-filter:blur(6px);
-  }
-  .feature-table td{
-    padding:9px 10px;
-    border-bottom:1px solid rgba(255,255,255,0.05);
-    color:rgba(255,255,255,0.88);
-    vertical-align:top;
-  }
-  .feature-table tr:hover td{
-    background:rgba(255,255,255,0.035);
-  }
-  .tier-tag{
-    display:inline-block;
-    padding:2px 9px;
+  .tier-pill{
+    font-size:9.5px;
+    padding:2px 7px;
     border-radius:999px;
-    font-size:10px;
     font-weight:700;
-    letter-spacing:0.4px;
-    text-transform:uppercase;
+    letter-spacing:0.3px;
     border:1px solid currentColor;
-    background:rgba(255,255,255,0.04);
+    background:rgba(255,255,255,0.03);
   }
-  .retract-inline{
-    display:inline-block;
-    padding:1px 6px;
-    border-radius:4px;
-    background:#ef4444;
-    color:#fff;
-    font-size:9px;
-    font-weight:800;
-    margin-left:6px;
-    vertical-align:middle;
+
+  /* ============================================================
+     Tree scroll container
+     ============================================================ */
+  .tree-scroll{
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    touch-action:pan-x pan-y;
+    padding-bottom:8px;
+    border-radius:12px;
+    background:rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,0.12);
   }
-  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px}
+  .tree-loading, .tree-empty{
+    font-size:12px;
+    color:rgba(255,255,255,0.6);
+    font-style:italic;
+    padding:22px;
+    text-align:center;
+  }
+
+  /* ============================================================
+     Loading bar
+     ============================================================ */
+  .loading-bar{
+    height:3px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.85),transparent);
+    background-size:200% 100%;
+    animation:slide 1.2s linear infinite;
+    border-radius:2px;
+    margin:12px 0;
+  }
+  @keyframes slide{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+  /* ============================================================
+     Mobile tweaks
+     ============================================================ */
+  @media (max-width:600px){
+    .collective-card{padding:16px 16px 22px;border-radius:16px}
+    .collective-header h2{font-size:18px}
+    .chart-grid{gap:12px}
+    .chart-box{height:280px;padding:4px 4px 0}
+    .action-btn{font-size:11px;padding:7px 12px}
+  }
+
+  /* Larger tap target on iOS */
+  @supports(-webkit-touch-callout:none){
+    .action-btn, .tab-btn{min-height:44px}
+    .protein-item{min-height:70px}
+  }
 </style>
 </head><body>
 
@@ -301,10 +290,10 @@
   <a href="about.html">About</a>
 </nav>
 
-<main class="glass-card" style="max-width:1280px">
+<main class="glass-card" style="max-width:1300px">
   <section style="padding:32px 40px 12px;">
     <h2 style="font-size:24px;margin-bottom:8px;letter-spacing:-0.3px;">Search Proteins</h2>
-    <p>Evidence · retractions · 3D structure · reliability charts · SVG tree · PDF.</p>
+    <p>Collective reliability dashboard · provenance tree · PDF export.</p>
   </section>
 
   <div class="search-bar">
@@ -313,30 +302,28 @@
   </div>
 
   <section class="results" id="out">
-    <div class="glass-field result-card">
-      <div class="grid-header"><h4>Waiting for input…</h4></div>
+    <div class="glass-field result-card" style="display:block;min-width:0">
+      <h4>Waiting for input…</h4>
     </div>
   </section>
 </main>
 
-<!-- libraries -->
-<script src="https://3Dmol.org/build/3Dmol-min.js"></script>
+<!-- Libraries -->
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
-<!-- project scripts -->
-<script src="assets/js/config.js?v=19"></script>
-<script src="assets/js/bubbles.js?v=19"></script>
-<script src="assets/js/ui.js?v=19"></script>
-<script src="assets/js/api.js?v=19"></script>
-<script src="assets/js/evidence.js?v=19"></script>
-<script src="assets/js/retraction.js?v=19"></script>
-<script src="assets/js/impact.js?v=19"></script>
-<script src="assets/js/structure.js?v=19"></script>
-<script src="assets/js/plotly-charts.js?v=19"></script>
-<script src="assets/js/tree.js?v=19"></script>
-<script src="assets/js/pdf.js?v=19"></script>
+<!-- Project scripts -->
+<script src="assets/js/config.js?v=22"></script>
+<script src="assets/js/bubbles.js?v=22"></script>
+<script src="assets/js/ui.js?v=22"></script>
+<script src="assets/js/api.js?v=22"></script>
+<script src="assets/js/evidence.js?v=22"></script>
+<script src="assets/js/retraction.js?v=22"></script>
+<script src="assets/js/impact.js?v=22"></script>
+<script src="assets/js/collective.js?v=22"></script>
+<script src="assets/js/tree.js?v=22"></script>
+<script src="assets/js/pdf.js?v=22"></script>
 
 <script>
 (function () {
@@ -349,135 +336,149 @@
   function looksLikeAccession(s) {
     return /^[A-Z][A-Z0-9]{5,9}$/i.test(s) && /\d/.test(s);
   }
-  function safeId(acc) { return acc.replace(/[^A-Za-z0-9]/g, "_"); }
   function esc(s) {
     return String(s == null ? "" : s)
       .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   }
-
-  function summarize(features) {
-    var tally = { high:0, medium:0, low:0, very_low:0, unknown:0 };
+  function tally(features) {
+    var t = { high:0, medium:0, low:0, very_low:0, unknown:0 };
     features.forEach(function (f) {
       var c = window.Evidence.classifyFeature(f);
-      tally[c.tier] = (tally[c.tier] || 0) + 1;
+      t[c.tier] = (t[c.tier] || 0) + 1;
     });
-    return tally;
+    return t;
   }
 
-  function renderFeatureTable(features, retractions) {
-    if (!features.length) {
-      return '<div class="impact-empty">No features in this record.</div>';
-    }
-    var rows = features.slice(0, 300).map(function (f) {
-      var c = window.Evidence.classifyFeature(f);
-      var pmids = window.Retraction.extractPmids(f);
-      var retracted = pmids.some(function (p) {
-        return retractions[p] && retractions[p].retracted;
-      });
-      var pos = "—";
-      if (f.location && f.location.start && f.location.end) {
-        pos = f.location.start.value + "–" + f.location.end.value;
-      }
-      var sources = (f.evidences || [])
-        .map(function (e) { return e.source; })
-        .filter(Boolean).slice(0, 2).join(", ") || "—";
-      return '<tr>' +
-        '<td>' + esc(f.type || "—") + '</td>' +
-        '<td>' + esc(f.description || "—") + '</td>' +
-        '<td class="mono">' + esc(pos) + '</td>' +
-        '<td><span class="tier-tag" style="color:' + c.color + '">' +
-          esc(c.label) + '</span>' +
-          (retracted ? '<span class="retract-inline">⚠ RETRACTED</span>' : '') +
-        '</td>' +
-        '<td class="mono">' + esc(sources) + '</td>' +
-      '</tr>';
-    }).join("");
+  function renderCollective(proteins, retractions) {
+    // aggregate tally
+    var total = { high:0, medium:0, low:0, very_low:0, unknown:0 };
+    var totalFeatures = 0;
+    proteins.forEach(function (p) {
+      var t = tally(p.features || []);
+      totalFeatures += (p.features || []).length;
+      Object.keys(t).forEach(function (k) { total[k] += t[k]; });
+    });
 
-    return '<table class="feature-table">' +
-      '<thead><tr>' +
-        '<th>Type</th><th>Description</th><th>Position</th>' +
-        '<th>Tier</th><th>Source</th>' +
-      '</tr></thead><tbody>' + rows + '</tbody></table>';
-  }
-
-  function renderProtein(r, retractions) {
-    var acc = r.primaryAccession || "";
-    var sid = safeId(acc);
-    var name = (r.proteinDescription &&
-                r.proteinDescription.recommendedName &&
-                r.proteinDescription.recommendedName.fullName &&
-                r.proteinDescription.recommendedName.fullName.value) ||
-               r.uniProtkbId || "Unknown";
-    var org = (r.organism && r.organism.scientificName) || "";
-    var features = (r.features || []).slice(0, 300);
-    var tally = summarize(features);
     var colors = { high:"#22c55e", medium:"#eab308", low:"#f97316",
                    very_low:"#ef4444", unknown:"#9ca3af" };
-    var pills = Object.keys(tally).filter(function (k) { return tally[k] > 0; })
+    var pills = Object.keys(total).filter(function (k) { return total[k] > 0; })
       .map(function (tier) {
         return '<span class="summary-pill" style="color:' + colors[tier] + '">' +
-               tally[tier] + ' ' + tier + '</span>';
+               total[tier] + ' ' + tier + '</span>';
       }).join("");
 
-    var retractedCount = 0;
-    features.forEach(function (f) {
-      var pmids = window.Retraction.extractPmids(f);
-      if (pmids.some(function (p) {
-        return retractions[p] && retractions[p].retracted;
-      })) retractedCount++;
+    var queryStr = q.value.trim() || "results";
+
+    var html = '' +
+      '<div class="collective-card">' +
+        '<div class="collective-header">' +
+          '<div>' +
+            '<h2>📊 ' + esc(queryStr) + ' — ' + proteins.length +
+              ' protein' + (proteins.length !== 1 ? 's' : '') + '</h2>' +
+            '<div class="meta">' + totalFeatures + ' annotated features · ' +
+              'live from UniProt · ' + new Date().toLocaleTimeString() +
+            '</div>' +
+          '</div>' +
+          '<div class="collective-actions">' +
+            '<button class="action-btn primary" id="pdf-collective">📄 Export PDF</button>' +
+            '<button class="action-btn" id="json-collective">⬇ JSON</button>' +
+          '</div>' +
+        '</div>' +
+        (pills ? '<div class="summary-bar">' + pills + '</div>' : '') +
+
+        // Tab strip
+        '<div class="tab-strip" id="tabstrip">' +
+          '<button class="tab-btn active" data-tab="charts">📈 Charts</button>' +
+          '<button class="tab-btn" data-tab="proteins">🧬 Proteins</button>' +
+          '<button class="tab-btn" data-tab="tree">🌳 Tree</button>' +
+          '<button class="tab-btn" data-tab="impact">💥 Impact</button>' +
+        '</div>' +
+
+        // Tab panels
+        '<div class="tab-panel active" id="tab-charts">' +
+          '<div class="chart-grid">' +
+            '<div class="chart-box"><div id="collective-donut"></div>' +
+              '<span class="touch-hint">🤏 pinch · drag</span></div>' +
+            '<div class="chart-box"><div id="collective-perprot"></div></div>' +
+            '<div class="chart-box"><div id="collective-types"></div></div>' +
+            '<div class="chart-box"><div id="collective-positions"></div></div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="tab-panel" id="tab-proteins">' +
+          '<div class="protein-list">' +
+            proteins.map(function (p) {
+              var acc = p.primaryAccession;
+              var name = (p.proteinDescription &&
+                          p.proteinDescription.recommendedName &&
+                          p.proteinDescription.recommendedName.fullName &&
+                          p.proteinDescription.recommendedName.fullName.value) ||
+                         p.uniProtkbId || "Unknown";
+              var org = (p.organism && p.organism.scientificName) || "";
+              var t = tally(p.features || []);
+              var tierPills = Object.keys(t).filter(function (k) { return t[k] > 0; })
+                .map(function (tier) {
+                  return '<span class="tier-pill" style="color:' + colors[tier] + '">' +
+                         t[tier] + ' ' + tier + '</span>';
+                }).join("");
+              return '<a class="protein-item" href="?q=' + esc(acc) + '">' +
+                '<div class="protein-item-info">' +
+                  '<h4>' + esc(name) + '</h4>' +
+                  '<div class="meta">' + esc(acc) + ' · ' + esc(org) + '</div>' +
+                '</div>' +
+                '<div class="tier-pills">' + tierPills + '</div>' +
+              '</a>';
+            }).join("") +
+          '</div>' +
+        '</div>' +
+
+        '<div class="tab-panel" id="tab-tree">' +
+          '<div id="collective-tree"></div>' +
+        '</div>' +
+
+        '<div class="tab-panel" id="tab-impact">' +
+          '<div id="collective-impact"></div>' +
+        '</div>' +
+      '</div>';
+
+    return html;
+  }
+
+  function setupTabs() {
+    var strip = document.getElementById('tabstrip');
+    if (!strip) return;
+    strip.addEventListener('click', function (e) {
+      var btn = e.target.closest('.tab-btn');
+      if (!btn) return;
+      var target = btn.getAttribute('data-tab');
+
+      strip.querySelectorAll('.tab-btn').forEach(function (b) {
+        b.classList.toggle('active', b === btn);
+      });
+      document.querySelectorAll('.tab-panel').forEach(function (p) {
+        p.classList.toggle('active', p.id === 'tab-' + target);
+      });
+
+      if (target === 'tree') {
+        var treeBox = document.getElementById('collective-tree');
+        if (treeBox && !treeBox.dataset.built && latestResults.length) {
+          treeBox.dataset.built = "1";
+          window.Provenance.renderForAccession(
+            latestResults[0].primaryAccession, treeBox, 2);
+        }
+      }
+      if (target === 'impact') {
+        var impactBox = document.getElementById('collective-impact');
+        if (impactBox && !impactBox.dataset.built && latestResults.length) {
+          impactBox.dataset.built = "1";
+          window.Impact.analyze(
+            latestResults[0], window.Retraction._cache || {}, impactBox);
+        }
+      }
+
+      // haptic on supported devices
+      if (navigator.vibrate) navigator.vibrate(8);
     });
-    var banner = retractedCount > 0
-      ? '<div class="retract-banner"><span class="icon">⚠️</span>' +
-        '<div><strong>' + retractedCount + ' annotation' +
-        (retractedCount > 1 ? 's' : '') +
-        '</strong> rely on retracted papers.</div></div>'
-      : "";
-
-    return (
-      '<div class="result-card" id="card-' + sid + '" data-acc="' + acc + '">' +
-        '<div class="grid-header"><div class="chain-header">' +
-          '<div><h4>' + esc(name) + '</h4><small>' +
-            esc(acc) + ' · ' + esc(org) + '</small></div>' +
-          '<div class="chain-actions">' +
-            '<button class="pdf-btn" data-acc="' + acc + '">📄 Export PDF</button>' +
-          '</div>' +
-        '</div></div>' +
-
-        '<div class="grid-summary">' +
-          (banner || '') +
-          (pills ? '<div class="summary-bar">' + pills + '</div>' : '') +
-        '</div>' +
-
-        '<div class="grid-mol">' +
-          '<div class="grid-section-title">🧬 3D Structure</div>' +
-          '<div id="mol-' + sid + '"></div>' +
-        '</div>' +
-
-        '<div class="grid-charts">' +
-          '<div class="grid-section-title">📊 Reliability Charts</div>' +
-          '<div class="charts-grid">' +
-            '<div class="chart-box"><div id="chart-' + sid + '-donut"></div></div>' +
-            '<div class="chart-box"><div id="chart-' + sid + '-features"></div></div>' +
-            '<div class="chart-box"><div id="chart-' + sid + '-scatter"></div></div>' +
-            '<div class="chart-box"><div id="chart-' + sid + '-timeline"></div></div>' +
-          '</div>' +
-        '</div>' +
-
-        '<div class="grid-tree">' +
-          '<div class="grid-section-title">🌳 Provenance Tree</div>' +
-          '<div class="tree-box" id="tree-' + sid + '"></div>' +
-        '</div>' +
-
-        '<div class="grid-impact">' +
-          '<div id="impact-' + sid + '"></div>' +
-        '</div>' +
-
-        '<div class="grid-table">' +
-          '<div class="grid-section-title">📋 Feature Table</div>' +
-          renderFeatureTable(features, retractions) +
-        '</div>' +
-      '</div>'
-    );
   }
 
   function collectAllPmids(results) {
@@ -493,87 +494,89 @@
   function run() {
     var t = q.value.trim();
     if (!t) return;
-    out.innerHTML = '<div class="glass-field result-card" style="display:block">' +
-                    '<h4>Searching…</h4>' +
-                    '<div class="loading-bar" style="height:2px"></div></div>';
+    out.innerHTML = '<div class="glass-field result-card" style="display:block;min-width:0">' +
+      '<h4>Searching…</h4><div class="loading-bar"></div></div>';
+
     var p;
     if (looksLikeAccession(t)) {
       p = window.BioAPI.fetchProtein(t).then(function (r) { return [r]; });
     } else {
-      p = window.BioAPI.searchProteins(t, 5);
+      p = window.BioAPI.searchProteins(t, 10);
     }
+
     p.then(function (results) {
       if (!results || !results.length) {
-        out.innerHTML = '<div class="glass-field result-card" style="display:block">' +
-                        '<h4>No results</h4></div>';
+        out.innerHTML = '<div class="glass-field result-card" style="display:block;min-width:0"><h4>No results</h4></div>';
         return;
       }
       latestResults = results;
-      out.innerHTML = '<div class="glass-field result-card" style="display:block">' +
-                      '<h4>Checking sources…</h4>' +
-                      '<div class="loading-bar" style="height:2px"></div></div>';
+
+      out.innerHTML = '<div class="glass-field result-card" style="display:block;min-width:0">' +
+        '<h4>Checking sources…</h4><div class="loading-bar"></div></div>';
+
       var pmids = collectAllPmids(results);
       return window.Retraction.checkPmids(pmids).then(function (retractions) {
-        out.innerHTML = results.map(function (r) {
-          return renderProtein(r, retractions);
-        }).join("");
+        out.innerHTML = renderCollective(results, retractions);
+        setupTabs();
 
-        // Render sub-components
-        results.forEach(function (r) {
-          var acc = r.primaryAccession || "";
-          var sid = safeId(acc);
-          var features = (r.features || []).slice(0, 300);
+        // render collective charts
+        window.Collective.renderAll(results);
 
-          var molBox = document.getElementById("mol-" + sid);
-          if (molBox && window.Structure) window.Structure.render(acc, molBox);
+        // Export PDF handler
+        document.getElementById('pdf-collective').addEventListener('click', function () {
+          var btn = this;
+          btn.disabled = true;
+          btn.textContent = 'Rendering…';
+          setTimeout(function () {
+            try {
+              // export the first protein's data with all features merged
+              var merged = Object.assign({}, results[0], {
+                features: results.reduce(function (acc, p) {
+                  return acc.concat((p.features || []).map(function (f) {
+                    f._source = p.primaryAccession;
+                    return f;
+                  }));
+                }, [])
+              });
+              window.PDFExport.exportPDF(merged, retractions, null);
+            } catch (e) { alert('PDF failed: ' + e.message); }
+            btn.disabled = false;
+            btn.textContent = '📄 Export PDF';
+          }, 50);
+        });
 
-          if (window.ReliabilityCharts) {
-            var prefix = "chart-" + sid;
-            if (document.getElementById(prefix + "-donut")) {
-              window.ReliabilityCharts.renderAll(prefix, features, retractions);
-            }
-          }
-
-          var treeBox = document.getElementById("tree-" + sid);
-          if (treeBox && window.Provenance) {
-            window.Provenance.renderForAccession(acc, treeBox, 2);
-          }
-
-          var impactBox = document.getElementById("impact-" + sid);
-          if (impactBox && window.Impact) {
-            window.Impact.analyze(r, retractions, impactBox);
-          }
+        // JSON download handler
+        document.getElementById('json-collective').addEventListener('click', function () {
+          var data = {
+            query: t,
+            generated_at: new Date().toISOString(),
+            proteins: results.map(function (p) {
+              return {
+                accession: p.primaryAccession,
+                name: (p.proteinDescription && p.proteinDescription.recommendedName &&
+                       p.proteinDescription.recommendedName.fullName &&
+                       p.proteinDescription.recommendedName.fullName.value) || "",
+                organism: (p.organism && p.organism.scientificName) || "",
+                feature_count: (p.features || []).length,
+                tier_tally: tally(p.features || {})
+              };
+            })
+          };
+          var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = 'provenance-' + t.replace(/[^A-Za-z0-9]/g, '_') + '.json';
+          a.click();
+          URL.revokeObjectURL(url);
         });
       });
     }).catch(function (e) {
       console.error(e);
-      out.innerHTML = '<div class="glass-field result-card" style="display:block">' +
-                      '<h4>Error: ' + esc(e.message) + '</h4></div>';
+      out.innerHTML = '<div class="glass-field result-card" style="display:block;min-width:0">' +
+        '<h4>Error: ' + esc(e.message) + '</h4></div>';
     });
   }
-
-  document.addEventListener("click", function (e) {
-    var btn = e.target.closest(".pdf-btn");
-    if (!btn) return;
-    var card = btn.closest(".result-card");
-    if (!card) return;
-    var acc = card.getAttribute("data-acc");
-    var found = latestResults.find(function (r) {
-      return r.primaryAccession === acc;
-    });
-    if (!found) return;
-    btn.disabled = true;
-    btn.textContent = "Rendering…";
-    setTimeout(function () {
-      try {
-        window.PDFExport.exportPDF(found, window.Retraction._cache || {});
-      } catch (err) {
-        alert("PDF failed: " + err.message);
-      }
-      btn.disabled = false;
-      btn.textContent = "📄 Export PDF";
-    }, 50);
-  });
 
   var params = new URLSearchParams(window.location.search);
   if (params.get("q")) {
@@ -582,7 +585,7 @@
   }
   go.addEventListener("click", run);
   q.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
-  console.log("[app] v19 ready — desktop grid + Plotly + PDF + SVG tree");
+  console.log("[app] v22 ready — collective dashboard + touch UX");
 })();
 </script>
 </body></html>
