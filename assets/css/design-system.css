@@ -13,7 +13,7 @@
 html{background:#1e3a8a}
 html,body{min-height:100%;overflow-x:hidden}
 
-/* ---------- Fixed gradient background (no reflow) ---------- */
+/* Fixed gradient background — bottom-most layer */
 body::before{
   content:"";
   position:fixed;
@@ -22,7 +22,6 @@ body::before{
   background:linear-gradient(135deg,#1e3a8a 0%,#6d28d9 50%,#db2777 100%);
   background-size:200% 200%;
   animation:gradientShift 18s ease infinite;
-  /* prevents iOS/Android flash */
   will-change:background-position;
   transform:translateZ(0);
   backface-visibility:hidden;
@@ -33,8 +32,7 @@ body{
   min-height:100vh;
   color:var(--text);
   position:relative;
-  /* safe background so no flash before ::before paints */
-  background:#1e3a8a;
+  background:transparent;   /* ← key: let body::before show through */
 }
 @keyframes gradientShift{
   0%{background-position:0% 50%}
@@ -42,9 +40,10 @@ body{
   100%{background-position:0% 50%}
 }
 
-/* ---------- Bubbles ---------- */
+/* ---------- Bubbles — sit above gradient, below card ---------- */
 #bubbleLayer{
-  position:fixed;inset:0;z-index:-1;
+  position:fixed;inset:0;
+  z-index:-1;               /* ← was 0; now -1 so it's above gradient */
   pointer-events:none;overflow:hidden;
   transform:translateZ(0);
   contain:strict;
@@ -150,7 +149,6 @@ body{
 h1,h2,h3{text-shadow:0 2px 14px rgba(0,0,0,0.45)}
 p{line-height:1.6;color:var(--text-dim);text-shadow:var(--text-glow)}
 
-/* Respect reduced-motion */
 @media (prefers-reduced-motion: reduce){
   .bubble{animation:none;display:none}
   body::before{animation:none}
