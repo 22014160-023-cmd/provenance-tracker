@@ -1,11 +1,14 @@
+// api.js — v3 (encoded queries, real error bodies)
 const UNIPROT_BASE = 'https://rest.uniprot.org/uniprotkb';
 const CROSSREF_BASE = 'https://api.crossref.org/works';
 
 async function fetchProtein(acc) {
   const url = `${UNIPROT_BASE}/${encodeURIComponent(acc)}.json`;
-  const r = await fetch(url);
+  console.log('[UniProt] fetchProtein:', url);
+  const r = await fetch(url, { headers: { Accept: 'application/json' } });
   if (!r.ok) {
     const txt = await r.text();
+    console.error('[UniProt] failed', r.status, txt.slice(0, 200));
     throw new Error(`UniProt ${r.status}: ${txt.slice(0, 120)}`);
   }
   return r.json();
@@ -17,9 +20,11 @@ async function searchProteins(q, limit = 5) {
   const size = Math.max(1, Math.min(500, limit));
   const query = encodeURIComponent(`(${term})`);
   const url = `${UNIPROT_BASE}/search?query=${query}&size=${size}&format=json`;
-  const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  console.log('[UniProt] searchProteins:', url);
+  const r = await fetch(url, { headers: { Accept: 'application/json' } });
   if (!r.ok) {
     const txt = await r.text();
+    console.error('[UniProt] search failed', r.status, txt.slice(0, 300));
     throw new Error(`UniProt ${r.status}: ${txt.slice(0, 200)}`);
   }
   const data = await r.json();
@@ -35,3 +40,4 @@ async function checkRetraction(doi) {
 }
 
 window.BioAPI = { fetchProtein, searchProteins, checkRetraction };
+console.log('[BioAPI] v3 loaded');
