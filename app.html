@@ -4,18 +4,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Search — BioOrigin</title>
 <link rel="icon" href="assets/img/favicon.svg"/>
-<link rel="stylesheet" href="assets/css/design-system.css?v=29"/>
-<link rel="stylesheet" href="assets/css/pages.css?v=29"/>
+<link rel="stylesheet" href="assets/css/design-system.css?v=30"/>
+<link rel="stylesheet" href="assets/css/pages.css?v=30"/>
 <style>
   /* ---------- Horizontal scroll wrapper — desktop layout frozen ---------- */
   .card-scroll{
     width:100%;
-    overflow-x:auto;
-    -webkit-overflow-scrolling:touch;
     padding-bottom:12px;
   }
   .collective-card{
-    min-width:1180px;
+    /* min-width removed for mobile responsiveness */
     border-radius:20px;
     padding:24px 28px 30px;
     background:rgba(255,255,255,0.04);
@@ -261,6 +259,51 @@
     .collective-card{padding:18px 18px 24px;border-radius:16px}
     .collective-header h2{font-size:19px}
   }
+
+
+  /* ============================================================
+     RESPONSIVE — chart grid + 3D stack vertically on phones
+     ============================================================ */
+  @media (max-width: 900px){
+    .charts-row{
+      grid-template-columns:1fr !important;
+    }
+    .view3d-box{
+      height:360px;
+    }
+    .chart-box{
+      height:300px;
+    }
+  }
+
+  @media (max-width: 600px){
+    .collective-card{
+      padding:18px 16px 22px;
+      border-radius:16px;
+    }
+    .collective-header h2{font-size:17px}
+    .collective-header .meta{font-size:11px}
+    .summary-pill{font-size:11px;padding:4px 10px}
+    .tab-btn{font-size:12px;padding:9px 14px}
+    .chart-box{height:280px;padding:4px 4px 0}
+    .view3d-box{height:320px}
+    .mol-meta{font-size:10.5px}
+    .view3d-title{font-size:10px;top:10px;left:12px}
+    .view3d-source{font-size:9.5px;top:10px;right:12px;padding:4px 9px}
+    .view3d-switch{font-size:10.5px;padding:6px 12px;bottom:10px;right:12px}
+    .protein-item{padding:14px 14px;min-height:64px}
+    .protein-item h4{font-size:13.5px}
+    .protein-item .meta{font-size:11px}
+    .tier-pill{font-size:9.5px}
+    .action-btn{font-size:11px;padding:8px 12px}
+  }
+
+  @media (max-width: 400px){
+    .chart-box{height:250px}
+    .view3d-box{height:280px}
+    .collective-header h2{font-size:16px}
+  }
+
 </style>
 </head><body>
 
@@ -295,17 +338,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
 <!-- Project scripts -->
-<script src="assets/js/config.js?v=29"></script>
-<script src="assets/js/bubbles.js?v=29"></script>
-<script src="assets/js/ui.js?v=29"></script>
-<script src="assets/js/api.js?v=29"></script>
-<script src="assets/js/evidence.js?v=29"></script>
-<script src="assets/js/retraction.js?v=29"></script>
-<script src="assets/js/impact.js?v=29"></script>
-<script src="assets/js/structure.js?v=29"></script>
-<script src="assets/js/collective.js?v=29"></script>
-<script src="assets/js/tree.js?v=29"></script>
-<script src="assets/js/pdf.js?v=29"></script>
+<script src="assets/js/config.js?v=30"></script>
+<script src="assets/js/bubbles.js?v=30"></script>
+<script src="assets/js/ui.js?v=30"></script>
+<script src="assets/js/api.js?v=30"></script>
+<script src="assets/js/evidence.js?v=30"></script>
+<script src="assets/js/retraction.js?v=30"></script>
+<script src="assets/js/impact.js?v=30"></script>
+<script src="assets/js/structure.js?v=30"></script>
+<script src="assets/js/collective.js?v=30"></script>
+<script src="assets/js/tree.js?v=30"></script>
+<script src="assets/js/pdf.js?v=30"></script>
 
 <script>
 (function () {

@@ -147,17 +147,29 @@
   //   2. Prefer proteins with the most features (most studied)
   //   3. Try top 3, fall back gracefully
   function rankCandidates(proteins) {
-    // Score each protein by:
-    //   - feature count (higher = more studied)
-    //   - reviewed status (Swiss-Prot > TrEMBL)
-    //   - length
-    return proteins.slice().sort(function (a, b) {
+    // Only consider proteins that have a MINIMUM of features.
+    // Garbage-search results (e.g. random words) often return
+    // entries with 1-2 features and no PDB structure.
+    // Filter them out before ranking.
+    var viable = proteins.filter(function (p) {
+      var featCount = (p.features || []).length;
+      var seqLen = (p.sequence && p.sequence.length) || 0;
+      return featCount >= 3 || seqLen >= 100;
+    });
+
+    // If nothing passes the filter, use the full set as fallback
+    if (!viable.length) viable = proteins.slice();
+
+    return viable.slice().sort(function (a, b) {
       var aReviewed = a.entryType && a.entryType.indexOf("reviewed") >= 0 ? 1 : 0;
       var bReviewed = b.entryType && b.entryType.indexOf("reviewed") >= 0 ? 1 : 0;
       var aLen = (a.sequence && a.sequence.length) || 0;
       var bLen = (b.sequence && b.sequence.length) || 0;
-      var aScore = (a.features || []).length * 10 + aReviewed * 100 + aLen;
-      var bScore = (b.features || []).length * 10 + bReviewed * 100 + bLen;
+      var aFeat = (a.features || []).length;
+      var bFeat = (b.features || []).length;
+      // weighted score
+      var aScore = aReviewed * 500 + aFeat * 10 + Math.min(aLen, 2000);
+      var bScore = bReviewed * 500 + bFeat * 10 + Math.min(bLen, 2000);
       return bScore - aScore;
     });
   }
@@ -246,7 +258,7 @@
       'font-size:11px;color:rgba(255,255,255,0.55);text-align:center;' +
       'letter-spacing:0.3px;max-width:90%;';
     label.innerHTML =
-      'No experimental or predicted structure for this result set<br>' +
+      'No experimental or predicted structure found for this search<br>' +
       '<span style="font-size:10.5px;opacity:0.8">' +
       'Try a specific protein like P04637 or P00533</span>';
     wrap.appendChild(label);
