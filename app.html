@@ -3,8 +3,9 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Search — Provenance Tracker</title>
-<link rel="stylesheet" href="assets/css/design-system.css?v=16"/>
-<link rel="stylesheet" href="assets/css/pages.css?v=16"/>
+<link rel="icon" href="assets/img/favicon.svg"/>
+<link rel="stylesheet" href="assets/css/design-system.css?v=17"/>
+<link rel="stylesheet" href="assets/css/pages.css?v=17"/>
 <style>
   .evidence-badge{display:inline-block;padding:3px 10px;border-radius:999px;
     font-size:11px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;
@@ -19,8 +20,14 @@
     padding:10px 12px;margin:4px -12px;border-left:3px solid #ef4444}
   .feature-text{flex:1;font-size:13px;color:rgba(255,255,255,0.9)}
   .feature-meta{font-size:11px;color:rgba(255,255,255,0.6);margin-top:4px}
-  .chain-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .chain-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap}
   .chain-header h4{font-size:16px}
+  .chain-actions{display:flex;gap:8px}
+  .pdf-btn{font-size:11px;padding:6px 12px;border-radius:8px;
+    background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.6);
+    color:#fecaca;cursor:pointer;font-weight:600}
+  .pdf-btn:hover{background:rgba(239,68,68,0.3)}
+  .pdf-btn:disabled{opacity:0.5;cursor:wait}
   .summary-bar{display:flex;gap:8px;flex-wrap:wrap;padding:10px 0 16px;
     border-bottom:1px solid rgba(255,255,255,0.15);margin-bottom:12px}
   .summary-pill{padding:4px 12px;border-radius:999px;font-size:12px;
@@ -38,12 +45,32 @@
     animation:slide 1.2s linear infinite;border-radius:2px;margin:10px 0}
   @keyframes slide{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-  .prov-section{margin-top:16px;padding-top:14px;
+  .section{margin-top:18px;padding-top:14px;
     border-top:1px solid rgba(255,255,255,0.15)}
-  .prov-header{display:flex;align-items:center;justify-content:space-between;
-    margin-bottom:10px}
-  .prov-header h5{font-size:13px;letter-spacing:0.4px;
-    text-transform:uppercase;color:rgba(255,255,255,0.85)}
+  .section h5{font-size:13px;letter-spacing:0.4px;text-transform:uppercase;
+    color:rgba(255,255,255,0.85);margin-bottom:10px}
+
+  /* 3D viewer */
+  .mol-canvas{border-radius:12px;background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.15);overflow:hidden;
+    position:relative}
+  .mol-loading,.mol-empty{font-size:12px;color:rgba(255,255,255,0.7);
+    padding:20px;text-align:center;font-style:italic}
+  .mol-meta{font-size:11px;color:rgba(255,255,255,0.6);
+    margin-top:8px;text-align:center}
+  .mol-meta a{color:#fbcfe8;text-decoration:none}
+  .mol-meta a:hover{text-decoration:underline}
+
+  /* Charts 2x2 grid */
+  .charts-grid{display:grid;gap:14px;margin-top:10px}
+  @media (min-width:760px){.charts-grid{grid-template-columns:1fr 1fr}}
+  .chart-box{padding:12px;border-radius:12px;
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.15);
+    height:280px;position:relative}
+  .chart-box canvas{max-height:240px}
+
+  /* Provenance tree */
   .prov-summary{font-size:12px;color:rgba(255,255,255,0.7);
     margin:6px 0 10px;font-style:italic}
   .prov-tree{margin-top:6px;font-size:13px;line-height:1.5}
@@ -63,8 +90,6 @@
     margin-left:14px;padding-left:6px}
 
   /* Impact analysis */
-  .impact-section{margin-top:16px;padding-top:14px;
-    border-top:1px solid rgba(255,255,255,0.15)}
   .impact-title{font-size:13px;letter-spacing:0.4px;text-transform:uppercase;
     color:#fecaca;margin-bottom:10px;font-weight:700}
   .impact-empty{font-size:12px;color:rgba(255,255,255,0.6);font-style:italic}
@@ -78,15 +103,10 @@
     margin-bottom:8px;line-height:1.45}
   .impact-count{font-size:13px;color:#fff;margin:8px 0 10px}
   .impact-count strong{color:#fecaca;font-size:16px}
-  .impact-list{display:flex;flex-direction:column;gap:4px}
   .impact-protein{display:flex;gap:8px;align-items:baseline;font-size:12px;
     padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.08)}
-  .impact-protein:last-child{border-bottom:none}
   .impact-protein a{color:#fbcfe8;text-decoration:none;font-weight:700;
     font-family:ui-monospace,monospace;min-width:70px}
-  .impact-protein a:hover{text-decoration:underline}
-  .impact-name{color:rgba(255,255,255,0.85);flex:1;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .impact-protein small{color:rgba(255,255,255,0.5);font-style:italic;
     font-size:11px}
   .impact-more{font-size:11px;color:rgba(255,255,255,0.6);font-style:italic;
@@ -106,7 +126,7 @@
 <main class="glass-card">
   <section style="padding:32px 40px 12px;">
     <h2 style="font-size:24px;margin-bottom:8px;">Search Proteins</h2>
-    <p>Enter a UniProt accession (e.g. <code>P12345</code>) or a keyword.</p>
+    <p>Evidence · retractions · 3D structure · reliability charts · PDF export.</p>
   </section>
 
   <div class="search-bar">
@@ -122,25 +142,37 @@
   </section>
 </main>
 
-<script src="assets/js/config.js?v=16"></script>
-<script src="assets/js/bubbles.js?v=16"></script>
-<script src="assets/js/ui.js?v=16"></script>
-<script src="assets/js/api.js?v=16"></script>
-<script src="assets/js/evidence.js?v=16"></script>
-<script src="assets/js/retraction.js?v=16"></script>
-<script src="assets/js/provenance.js?v=16"></script>
-<script src="assets/js/impact.js?v=16"></script>
+<!-- libraries -->
+<script src="https://3Dmol.org/build/3Dmol-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- project scripts -->
+<script src="assets/js/config.js?v=17"></script>
+<script src="assets/js/bubbles.js?v=17"></script>
+<script src="assets/js/ui.js?v=17"></script>
+<script src="assets/js/api.js?v=17"></script>
+<script src="assets/js/evidence.js?v=17"></script>
+<script src="assets/js/retraction.js?v=17"></script>
+<script src="assets/js/provenance.js?v=17"></script>
+<script src="assets/js/impact.js?v=17"></script>
+<script src="assets/js/structure.js?v=17"></script>
+<script src="assets/js/charts.js?v=17"></script>
+<script src="assets/js/pdf.js?v=17"></script>
 
 <script>
 (function () {
   "use strict";
-  var q   = document.getElementById("q");
-  var go  = document.getElementById("go");
+  var q = document.getElementById("q");
+  var go = document.getElementById("go");
   var out = document.getElementById("out");
 
   function looksLikeAccession(s) {
     return /^[A-Z][A-Z0-9]{5,9}$/i.test(s) && /\d/.test(s);
   }
+
+  function safeId(acc) { return acc.replace(/[^A-Za-z0-9]/g, "_"); }
 
   function renderFeature(feature, retractions) {
     var c = window.Evidence.classifyFeature(feature);
@@ -172,7 +204,7 @@
   }
 
   function summarize(features) {
-    var tally = { high: 0, medium: 0, low: 0, very_low: 0, unknown: 0 };
+    var tally = { high:0, medium:0, low:0, very_low:0, unknown:0 };
     features.forEach(function (f) {
       var c = window.Evidence.classifyFeature(f);
       tally[c.tier] = (tally[c.tier] || 0) + 1;
@@ -181,7 +213,8 @@
   }
 
   function renderProtein(r, retractions) {
-    var acc  = r.primaryAccession || "";
+    var acc = r.primaryAccession || "";
+    var sid = safeId(acc);
     var name = (r.proteinDescription &&
                 r.proteinDescription.recommendedName &&
                 r.proteinDescription.recommendedName.fullName &&
@@ -190,8 +223,8 @@
     var org = (r.organism && r.organism.scientificName) || "";
     var features = (r.features || []).slice(0, 200);
     var tally = summarize(features);
-    var colors = { high: "#22c55e", medium: "#eab308", low: "#f97316",
-                   very_low: "#ef4444", unknown: "#9ca3af" };
+    var colors = { high:"#22c55e", medium:"#eab308", low:"#f97316",
+                   very_low:"#ef4444", unknown:"#9ca3af" };
     var pills = Object.keys(tally).filter(function (k) { return tally[k] > 0; })
       .map(function (tier) {
         return '<span class="summary-pill" style="color:' + colors[tier] + '">' +
@@ -216,26 +249,43 @@
       ? features.slice(0, 25).map(function (f) {
           return renderFeature(f, retractions);
         }).join("")
-      : '<div class="feature-meta">This UniProt entry has no features.</div>';
-
-    var provId = "prov-" + acc.replace(/[^A-Za-z0-9]/g, "_");
-    var impactId = "impact-" + acc.replace(/[^A-Za-z0-9]/g, "_");
+      : '<div class="feature-meta">No features in this record.</div>';
 
     return (
-      '<div class="glass-field result-card" style="margin-bottom:18px" data-acc="' + acc + '">' +
+      '<div class="glass-field result-card" id="card-' + sid +
+        '" style="margin-bottom:18px" data-acc="' + acc + '">' +
         '<div class="chain-header">' +
-          '<h4>' + name + '</h4>' +
-          '<small>' + acc + ' · ' + org + '</small>' +
+          '<div><h4>' + name + '</h4><small>' + acc + ' · ' + org + '</small></div>' +
+          '<div class="chain-actions">' +
+            '<button class="pdf-btn" data-acc="' + acc + '">📄 Export PDF</button>' +
+          '</div>' +
         '</div>' +
         banner +
         (pills ? '<div class="summary-bar">' + pills + '</div>' : "") +
         '<div>' + rows + '</div>' +
-        '<div class="prov-section">' +
-          '<div class="prov-header"><h5>🌳 Evidence Hierarchy</h5></div>' +
-          '<div id="' + provId + '" class="prov-tree"></div>' +
+
+        '<div class="section">' +
+          '<h5>🧬 3D Structure</h5>' +
+          '<div id="mol-' + sid + '"></div>' +
         '</div>' +
-        '<div class="impact-section">' +
-          '<div id="' + impactId + '"></div>' +
+
+        '<div class="section">' +
+          '<h5>📊 Reliability Charts</h5>' +
+          '<div class="charts-grid">' +
+            '<div class="chart-box"><canvas id="chart-' + sid + '-donut"></canvas></div>' +
+            '<div class="chart-box"><canvas id="chart-' + sid + '-features"></canvas></div>' +
+            '<div class="chart-box"><canvas id="chart-' + sid + '-scatter"></canvas></div>' +
+            '<div class="chart-box"><canvas id="chart-' + sid + '-timeline"></canvas></div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="section">' +
+          '<h5>🌳 Evidence Hierarchy</h5>' +
+          '<div id="prov-' + sid + '"></div>' +
+        '</div>' +
+
+        '<div class="section">' +
+          '<div id="impact-' + sid + '"></div>' +
         '</div>' +
       '</div>'
     );
@@ -274,19 +324,30 @@
         out.innerHTML = results.map(function (r) {
           return renderProtein(r, retractions);
         }).join("");
-        // Auto-build hierarchies
+
+        // Render sub-components per protein
         results.forEach(function (r) {
           var acc = r.primaryAccession || "";
-          var id = "prov-" + acc.replace(/[^A-Za-z0-9]/g, "_");
-          var box = document.getElementById(id);
-          if (box) window.Provenance.renderForData(r, box);
-        });
-        // Run impact analysis
-        results.forEach(function (r) {
-          var acc = r.primaryAccession || "";
-          var impactId = "impact-" + acc.replace(/[^A-Za-z0-9]/g, "_");
-          var ibox = document.getElementById(impactId);
-          if (ibox) window.Impact.analyze(r, retractions, ibox);
+          var sid = safeId(acc);
+          var features = (r.features || []).slice(0, 200);
+
+          // 3D
+          var molBox = document.getElementById("mol-" + sid);
+          if (molBox) window.Structure.render(acc, molBox);
+
+          // Charts
+          var prefix = "chart-" + sid;
+          if (document.getElementById(prefix + "-donut")) {
+            window.ReliabilityCharts.renderAll(prefix, features, retractions);
+          }
+
+          // Hierarchy
+          var provBox = document.getElementById("prov-" + sid);
+          if (provBox) window.Provenance.renderForData(r, provBox);
+
+          // Impact
+          var impactBox = document.getElementById("impact-" + sid);
+          if (impactBox) window.Impact.analyze(r, retractions, impactBox);
         });
       });
     }).catch(function (e) {
@@ -296,6 +357,16 @@
     });
   }
 
+  // PDF button handler
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest(".pdf-btn");
+    if (!btn) return;
+    var card = btn.closest(".glass-field.result-card");
+    if (!card) return;
+    var acc = card.getAttribute("data-acc") || "protein";
+    window.PDFExport.exportElement(card, acc);
+  });
+
   var params = new URLSearchParams(window.location.search);
   if (params.get("q")) {
     q.value = params.get("q");
@@ -303,7 +374,7 @@
   }
   go.addEventListener("click", run);
   q.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
-  console.log("[app] ready v15 (impact analysis)");
+  console.log("[app] ready v17 — 3D + charts + PDF");
 })();
 </script>
 </body></html>
