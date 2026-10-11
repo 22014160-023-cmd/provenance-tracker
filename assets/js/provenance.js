@@ -1,10 +1,16 @@
-// provenance.js v3 — evidence hierarchy tree
+// provenance.js v4 — hierarchy that includes evidence-less features
 (function () {
   var TIERS = ["high", "medium", "low", "very_low", "unknown"];
   var COLORS = { high: "#22c55e", medium: "#eab308", low: "#f97316",
                  very_low: "#ef4444", unknown: "#9ca3af" };
+  var TIER_LABEL = {
+    high: "Experimental / Curated",
+    medium: "Combinatorial",
+    low: "Inferred (similarity / homology / pattern)",
+    very_low: "Automatic",
+    unknown: "No evidence code"
+  };
 
-  // Build a tree structure from a UniProt protein record
   function buildHierarchy(data) {
     var root = {
       accession: data.primaryAccession || "?",
@@ -17,17 +23,21 @@
       children: []
     };
 
-    // Group features by trust tier → then by feature type
     var byTier = {};
     TIERS.forEach(function (t) { byTier[t] = {}; });
 
-    var features = (data.features || []).filter(function (f) {
-      return f.evidences && f.evidences.length > 0;
-    });
+    // Include ALL features — those without evidence fall into "unknown"
+    var features = data.features || [];
 
     features.forEach(function (f) {
-      var codes = f.evidences.map(function (e) { return e.evidenceCode; });
-      var tier = window.Evidence.classifyEvidence(codes).tier;
+      var codes = (f.evidences || []).map(function (e) { return e.evidenceCode; })
+                                    .filter(Boolean);
+      var tier;
+      if (!codes.length) {
+        tier = "unknown";
+      } else {
+        tier = window.Evidence.classifyEvidence(codes).tier;
+      }
       var key = f.type || "Feature";
       if (!byTier[tier][key]) byTier[tier][key] = [];
       byTier[tier][key].push(f);
@@ -40,17 +50,7 @@
       if (!total) return;
 
       var tierNode = {
-        label: window.Evidence.ECO_MAP[
-          Object.keys(window.Evidence.ECO_MAP)
-            .find(function (k) {
-              return window.Evidence.ECO_MAP[k].tier === tier;
-            })
-        ] ? window.Evidence.ECO_MAP[
-          Object.keys(window.Evidence.ECO_MAP)
-            .find(function (k) {
-              return window.Evidence.ECO_MAP[k].tier === tier;
-            })
-        ].label : tier,
+        label: TIER_LABEL[tier] || tier,
         count: total,
         color: COLORS[tier],
         tier: tier,
@@ -89,7 +89,6 @@
     var count = node.count;
     var color = node.color || "#ffffff";
 
-    // Root row
     var rootRow =
       '<div class="prov-row" style="padding-left:' + pad + 'px">' +
         '<span class="prov-arrow">' + (isRoot ? "🎯" : "↳") + '</span>' +
@@ -103,7 +102,6 @@
           '<small class="prov-org">' + node.organism + '</small>' : '') +
       '</div>';
 
-    // Examples (leaf level)
     var examplesHtml = "";
     if (node.examples) {
       examplesHtml = node.examples.map(function (ex) {
@@ -116,7 +114,6 @@
       }).join("");
     }
 
-    // Children
     var childrenHtml = "";
     if (node.children && node.children.length) {
       childrenHtml = node.children.slice(0, maxItems).map(function (c) {
@@ -137,13 +134,13 @@
     var tree = buildHierarchy(data);
     if (!tree.children.length) {
       container.innerHTML = '<div class="prov-empty">' +
-        'No features with evidence codes in this record.</div>';
+        'No features in this record.</div>';
       return;
     }
     var total = tree.children.reduce(function (s, t) { return s + t.count; }, 0);
     container.innerHTML =
-      '<div class="prov-summary">' + total + ' annotated features · ' +
-        tree.children.length + ' trust tier' +
+      '<div class="prov-summary">' + total + ' features · ' +
+        tree.children.length + ' tier' +
         (tree.children.length !== 1 ? 's' : '') + '</div>' +
       '<div class="prov-tree">' + renderHierarchy(tree, 0, false) + '</div>';
   }
@@ -152,5 +149,5 @@
     buildHierarchy: buildHierarchy,
     renderForData: renderForData
   };
-  console.log("[Provenance] ready v3 (hierarchy)");
+  console.log("[Provenance] ready v4");
 })();
