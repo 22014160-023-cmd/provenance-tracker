@@ -1,6 +1,7 @@
-// structure.js — CORS-safe 3D viewer (v31, verified end-to-end)
+// structure.js — CORS-safe 3D viewer (v34, clean)
 (function () {
   var pdbIdCache = {};
+  var activeViewer = null;
 
   // ---------- STEP 1: get PDB IDs from UniProt crossreferences ----------
   function getPDBIds(acc) {
@@ -49,11 +50,18 @@
       });
   }
 
+  // ---------- Stop current viewer ----------
+  function stopActive() {
+    if (activeViewer && activeViewer.stopAnimate) {
+      try { activeViewer.stopAnimate(); } catch (e) {}
+    }
+    activeViewer = null;
+  }
+
   // ---------- Render ----------
   function renderModel(model, format, container, metaHtml) {
     container.innerHTML = '';
 
-    // Explicit pixel height prevents collapse on some mobile browsers
     var height = 380;
     if (window.innerWidth < 600) height = 320;
     if (window.innerWidth < 400) height = 280;
@@ -61,27 +69,26 @@
     var canvas = document.createElement('div');
     canvas.className = 'mol-canvas';
     canvas.style.cssText =
-      'width:100%;' +
-      'height:' + height + 'px;' +
-      'min-height:' + height + 'px;' +
+      'width:100%;height:' + height + 'px;min-height:' + height + 'px;' +
       'display:block;position:relative;';
     container.appendChild(canvas);
 
     if (!window.$3Dmol) {
       container.innerHTML =
-        '<div class="mol-empty">3D viewer failed to load ' +
-        '(3Dmol.js CDN blocked?)</div>';
+        '<div class="mol-empty">3D viewer failed to load (3Dmol.js CDN)</div>';
       return;
     }
 
-    // Give the DOM a tick to lay out the canvas before WebGL init
+    // Let the DOM lay out the canvas before WebGL init
     setTimeout(function () {
       try {
-        activeViewer = window.$3Dmol.createViewer(canvas, {
+        var viewer = window.$3Dmol.createViewer(canvas, {
           backgroundColor: 'rgba(20,15,45,0.55)',
-          antialias: true
+          antialias: false
         });
+
         activeViewer = viewer;
+
         viewer.addModel(model, format);
 
         viewer.setStyle({}, {
@@ -108,7 +115,7 @@
         viewer.spin('y', 0.35);
         viewer.render();
 
-        // Force a resize after a moment so it fills the box
+        // Force a resize after layout
         setTimeout(function () {
           try {
             viewer.resize();
@@ -121,6 +128,7 @@
         meta.className = 'mol-meta';
         meta.innerHTML = metaHtml;
         container.appendChild(meta);
+
       } catch (e) {
         console.error("[Structure] render failed:", e);
         container.innerHTML =
@@ -129,7 +137,7 @@
     }, 80);
   }
 
-  // ---------- Try one protein: PDB first, AlphaFold fallback ----------
+  // ---------- Try one protein ----------
   function tryOne(acc, container) {
     return getPDBIds(acc).then(function (pdbIds) {
       if (!pdbIds || !pdbIds.length) throw new Error("no PDB crossrefs");
@@ -160,7 +168,7 @@
     });
   }
 
-  // ---------- Rank search results ----------
+  // ---------- Rank candidates ----------
   function rankCandidates(proteins) {
     var viable = proteins.filter(function (p) {
       var featCount = (p.features || []).length;
@@ -182,7 +190,7 @@
     });
   }
 
-  // ---------- Main entry for search result set ----------
+  // ---------- Entry for search result set ----------
   function renderFromSearch(proteins, container) {
     container.innerHTML =
       '<div class="mol-loading">Finding a representative structure…' +
@@ -265,15 +273,6 @@
     }
   }
 
-  var activeViewer = null;
-
-  function stopActive() {
-    if (activeViewer && activeViewer.stopAnimate) {
-      try { activeViewer.stopAnimate(); } catch (e) {}
-    }
-    activeViewer = null;
-  }
-
   window.Structure = {
     stopActive: stopActive,
     renderFromSearch: renderFromSearch,
@@ -281,5 +280,5 @@
     tryOne: tryOne,
     render: function (acc, container) { tryOne(acc, container); }
   };
-  console.log('[Structure] ready v31');
+  console.log('[Structure] ready v34');
 })();
