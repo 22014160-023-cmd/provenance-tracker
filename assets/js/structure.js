@@ -1,5 +1,6 @@
-// structure.js v43 — click-proof preview + live 3D
+// structure.js v44 — click-proof preview + live 3D (built 2026-10-11)
 (function () {
+  var VERSION = "v44";
   var pdbIdCache = {};
   var activeViewer = null;
   var currentModel = null;
@@ -71,9 +72,6 @@
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   }
 
-  // Container is set up so that:
-  //  - the image has pointer-events: none
-  //  - the button has z-index: 100, position: absolute, works everywhere
   function renderPreview(container, imageUrl, metaHtml, onPlay) {
     container.innerHTML = '';
 
@@ -82,38 +80,36 @@
     wrap.style.cssText =
       'position:relative;width:100%;height:100%;' +
       'display:flex;align-items:center;justify-content:center;' +
-      'overflow:hidden;';
+      'overflow:hidden;min-height:280px;';
 
     var img = document.createElement('img');
     img.src = imageUrl;
     img.alt = '';
     img.style.cssText =
-      'max-width:75%;max-height:75%;object-fit:contain;' +
+      'max-width:70%;max-height:70%;object-fit:contain;' +
       'pointer-events:none;user-select:none;' +
       'filter:drop-shadow(0 10px 30px rgba(0,0,0,0.5));' +
       'border-radius:10px;';
-    img.onerror = function () {
-      img.src = alphaFoldSvg();
-    };
+    img.onerror = function () { img.src = alphaFoldSvg(); };
     wrap.appendChild(img);
 
-    // Play button — must be clickable. Force z-index + pointer-events.
     var overlay = document.createElement('button');
     overlay.type = 'button';
     overlay.className = 'mol-play-overlay';
     overlay.innerHTML =
-      '<svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">' +
+      '<svg viewBox="0 0 24 24" width="26" height="26" ' +
+        'fill="currentColor" style="flex-shrink:0">' +
         '<path d="M8 5v14l11-7z"/>' +
       '</svg><span>Play 3D</span>';
     overlay.style.cssText =
-      'position:absolute;bottom:24px;left:50%;' +
+      'position:absolute;bottom:22px;left:50%;' +
       'transform:translateX(-50%);' +
       'z-index:100;pointer-events:auto;cursor:pointer;' +
       'display:inline-flex;align-items:center;gap:8px;' +
-      'padding:14px 22px;border-radius:999px;' +
+      'padding:13px 22px;border-radius:999px;' +
       'background:rgba(34,197,94,0.95);' +
-      'border:2px solid rgba(255,255,255,0.55);' +
-      'color:#fff;font-size:15px;font-weight:700;' +
+      'border:2px solid rgba(255,255,255,0.6);' +
+      'color:#fff;font-size:14.5px;font-weight:700;' +
       'font-family:inherit;' +
       'box-shadow:0 12px 32px rgba(34,197,94,0.55);' +
       'transition:transform 0.15s ease,background 0.15s ease;' +
@@ -133,12 +129,10 @@
         fired = false;
       }
     }
-
     overlay.addEventListener('click', fire);
     overlay.addEventListener('touchend', fire);
 
     wrap.appendChild(overlay);
-
     container.appendChild(wrap);
 
     if (metaHtml) {
@@ -150,10 +144,7 @@
   }
 
   function mountLive3D(container, metaHtml) {
-    if (!currentModel) {
-      console.error("[Structure] mountLive3D: no current model");
-      return;
-    }
+    if (!currentModel) return;
 
     if (activeViewer && activeViewer.clear) {
       try { activeViewer.clear(); } catch (e) {}
@@ -213,7 +204,6 @@
           container.appendChild(meta);
         }
 
-        // Pause button
         var pauseBtn = document.createElement('button');
         pauseBtn.type = 'button';
         pauseBtn.textContent = '⏸ Pause';
@@ -242,7 +232,6 @@
         });
         container.style.position = 'relative';
         container.appendChild(pauseBtn);
-
       } catch (e) {
         console.error("[Structure] WebGL mount failed:", e);
         container.innerHTML =
@@ -348,5 +337,5 @@
     tryOne: tryOne,
     render: function (acc, container) { tryOne(acc, container); }
   };
-  console.log('[Structure] ready v43');
+  console.log('[Structure] ready ' + VERSION);
 })();
