@@ -3,8 +3,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Search — Provenance Tracker</title>
-<link rel="stylesheet" href="assets/css/design-system.css?v=8"/>
-<link rel="stylesheet" href="assets/css/pages.css?v=8"/>
+<link rel="stylesheet" href="assets/css/design-system.css?v=9"/>
+<link rel="stylesheet" href="assets/css/pages.css?v=9"/>
 <style>
   .evidence-badge{display:inline-block;padding:3px 10px;border-radius:999px;
     font-size:11px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;
@@ -14,6 +14,10 @@
   .feature-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;
     border-bottom:1px solid rgba(255,255,255,0.08)}
   .feature-row:last-child{border-bottom:none}
+  .feature-row.retracted{
+    background:rgba(239,68,68,0.12);
+    border-radius:10px;padding:10px 12px;margin:4px -12px;
+    border-left:3px solid #ef4444}
   .feature-text{flex:1;font-size:13px;color:rgba(255,255,255,0.9)}
   .feature-meta{font-size:11px;color:rgba(255,255,255,0.6);margin-top:4px}
   .chain-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
@@ -22,6 +26,23 @@
     border-bottom:1px solid rgba(255,255,255,0.15);margin-bottom:12px}
   .summary-pill{padding:4px 12px;border-radius:999px;font-size:12px;
     font-weight:600;border:1px solid currentColor}
+  .retract-banner{
+    display:flex;align-items:center;gap:12px;padding:14px 16px;
+    background:rgba(239,68,68,0.18);border:1px solid #ef4444;
+    border-radius:14px;margin-bottom:16px;
+    font-size:13px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.5)}
+  .retract-banner .icon{font-size:22px}
+  .retract-banner strong{color:#fecaca}
+  .retract-tag{
+    display:inline-block;padding:2px 8px;border-radius:6px;
+    background:#ef4444;color:#fff;font-size:10px;font-weight:800;
+    letter-spacing:0.5px;margin-left:8px;vertical-align:middle}
+  .loading-bar{
+    height:3px;background:linear-gradient(90deg,transparent,
+      rgba(255,255,255,0.8),transparent);
+    background-size:200% 100%;animation:slide 1.2s linear infinite;
+    border-radius:2px;margin:10px 0}
+  @keyframes slide{0%{background-position:200% 0}100%{background-position:-200% 0}}
 </style>
 </head><body>
 
@@ -34,7 +55,8 @@
 <main class="glass-card">
   <section style="padding:32px 40px 12px;">
     <h2 style="font-size:24px;margin-bottom:8px;">Search Proteins</h2>
-    <p>Enter a UniProt accession (e.g. <code>P12345</code>) or a keyword.</p>
+    <p>Enter a UniProt accession (e.g. <code>P12345</code>) or a keyword.
+       Retracted sources are flagged automatically.</p>
   </section>
 
   <div class="search-bar">
@@ -50,44 +72,54 @@
   </section>
 </main>
 
-<!-- load order matters: config → bubbles → ui → api → evidence -->
-<script src="assets/js/config.js?v=8"></script>
-<script src="assets/js/bubbles.js?v=8"></script>
-<script src="assets/js/ui.js?v=8"></script>
-<script src="assets/js/api.js?v=8"></script>
-<script src="assets/js/evidence.js?v=8"></script>
+<script src="assets/js/config.js?v=9"></script>
+<script src="assets/js/bubbles.js?v=9"></script>
+<script src="assets/js/ui.js?v=9"></script>
+<script src="assets/js/api.js?v=9"></script>
+<script src="assets/js/evidence.js?v=9"></script>
+<script src="assets/js/retraction.js?v=9"></script>
 
 <script>
 (function () {
   "use strict";
-  var q = document.getElementById("q");
-  var go = document.getElementById("go");
+  var q   = document.getElementById("q");
+  var go  = document.getElementById("go");
   var out = document.getElementById("out");
 
   function looksLikeAccession(s) {
     return /^[A-Z][A-Z0-9]{5,9}$/i.test(s) && /\d/.test(s);
   }
 
-  function renderFeature(feature) {
+  function renderFeature(feature, retractions) {
     var codes = window.Evidence.extractCodes(feature);
     if (!codes.length) return "";
-    var c = window.Evidence.classifyEvidence(codes);
+    var c  = window.Evidence.classifyEvidence(codes);
     var desc = feature.description || feature.type || "Feature";
     var positions = "";
     if (feature.location && feature.location.start && feature.location.end) {
       positions = feature.location.start.value + "–" + feature.location.end.value;
     }
+
+    var pmids = window.Retraction.extractPmids(feature);
+    var hit   = pmids.find(function (p) {
+      return retractions[p] && retractions[p].retracted;
+    });
+
     var sources = (feature.evidences || [])
       .map(function (e) { return e.source; })
       .filter(Boolean).slice(0, 3).join(", ");
+
+    var tag = hit ? '<span class="retract-tag">⚠ RETRACTED</span>' : '';
+
     return (
-      '<div class="feature-row">' +
+      '<div class="feature-row' + (hit ? ' retracted' : '') + '">' +
         '<span class="evidence-dot" style="color:' + c.color +
           ';background:' + c.color + '"></span>' +
         '<div class="feature-text">' +
           '<div>' + desc +
             '<span class="evidence-badge" style="color:' + c.color + '">' +
-              c.label + '</span></div>' +
+              c.label + '</span>' + tag +
+          '</div>' +
           '<div class="feature-meta">' +
             (positions ? "pos " + positions + " · " : "") +
             (sources || "no source") +
@@ -106,17 +138,19 @@
     return tally;
   }
 
-  function renderProtein(r) {
-    var acc = r.primaryAccession || "";
+  function renderProtein(r, retractions) {
+    var acc  = r.primaryAccession || "";
     var name = (r.proteinDescription &&
                 r.proteinDescription.recommendedName &&
                 r.proteinDescription.recommendedName.fullName &&
                 r.proteinDescription.recommendedName.fullName.value) ||
                r.uniProtkbId || "Unknown";
     var org = (r.organism && r.organism.scientificName) || "";
+
     var features = (r.features || []).filter(function (f) {
       return window.Evidence.extractCodes(f).length > 0;
     });
+
     var tally = summarize(features);
     var colors = { high: "#22c55e", medium: "#eab308", low: "#f97316",
                    very_low: "#ef4444", unknown: "#9ca3af" };
@@ -126,45 +160,83 @@
       return '<span class="summary-pill" style="color:' + colors[tier] + '">' +
              tally[tier] + ' ' + tier + '</span>';
     }).join("");
+
+    var retractedCount = 0;
+    features.forEach(function (f) {
+      var pmids = window.Retraction.extractPmids(f);
+      if (pmids.some(function (p) {
+        return retractions[p] && retractions[p].retracted;
+      })) retractedCount++;
+    });
+
+    var banner = retractedCount > 0
+      ? '<div class="retract-banner">' +
+          '<span class="icon">⚠️</span>' +
+          '<div><strong>' + retractedCount + ' annotation' +
+          (retractedCount > 1 ? 's' : '') +
+          '</strong> rely on retracted papers. Highlighted below.</div>' +
+        '</div>'
+      : '';
+
     var rows = features.length
-      ? features.map(renderFeature).join("")
+      ? features.map(function (f) { return renderFeature(f, retractions); }).join("")
       : '<div class="feature-meta">No annotated features with evidence.</div>';
+
     return (
       '<div class="glass-field result-card" style="margin-bottom:18px">' +
         '<div class="chain-header">' +
           '<h4>' + name + '</h4>' +
           '<small>' + acc + ' · ' + org + '</small>' +
         '</div>' +
+        banner +
         (pills ? '<div class="summary-bar">' + pills + '</div>' : "") +
         '<div>' + rows + '</div>' +
       '</div>'
     );
   }
 
+  function collectAllPmids(results) {
+    var set = {};
+    results.forEach(function (r) {
+      (r.features || []).forEach(function (f) {
+        window.Retraction.extractPmids(f).forEach(function (p) { set[p] = true; });
+      });
+    });
+    return Object.keys(set);
+  }
+
   function run() {
     var t = q.value.trim();
     if (!t) return;
-    if (!window.BioAPI) {
-      out.innerHTML = '<div class="glass-field result-card"><h4>' +
-                      'Error: BioAPI not loaded — check console</h4></div>';
-      return;
-    }
-    out.innerHTML = '<div class="glass-field result-card"><h4>Searching…</h4></div>';
+    out.innerHTML = '<div class="glass-field result-card"><h4>Searching…</h4>' +
+                    '<div class="loading-bar"></div></div>';
+
     var p;
     if (looksLikeAccession(t)) {
-      console.log("[app] accession:", t);
       p = window.BioAPI.fetchProtein(t).then(function (r) { return [r]; });
     } else {
-      console.log("[app] keyword:", t);
       p = window.BioAPI.searchProteins(t, 5);
     }
+
     p.then(function (results) {
       if (!results || !results.length) {
         out.innerHTML = '<div class="glass-field result-card"><h4>No results</h4></div>';
         return;
       }
-      out.innerHTML = results.map(renderProtein).join("");
+      out.innerHTML = '<div class="glass-field result-card"><h4>Checking sources…</h4>' +
+                      '<div class="loading-bar"></div></div>';
+
+      var pmids = collectAllPmids(results);
+      console.log("[app] checking", pmids.length, "PMIDs");
+
+      return window.Retraction.checkPmids(pmids).then(function (retractions) {
+        console.log("[app] done", retractions);
+        out.innerHTML = results.map(function (r) {
+          return renderProtein(r, retractions);
+        }).join("");
+      });
     }).catch(function (e) {
+      console.error(e);
       out.innerHTML = '<div class="glass-field result-card"><h4>Error: ' +
                       e.message + '</h4></div>';
     });
@@ -172,7 +244,7 @@
 
   go.addEventListener("click", run);
   q.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
-  console.log("[app] ready");
+  console.log("[app] ready with retraction checking");
 })();
 </script>
 </body></html>
