@@ -9,6 +9,8 @@
   // ---------- STEP 1: PDB IDs from UniProt crossrefs ----------
   function getPDBIds(acc) {
     if (pdbIdCache[acc]) return Promise.resolve(pdbIdCache[acc]);
+    // Always fetch the FULL record — the search endpoint strips
+    // out uniProtKBCrossReferences, so we can't use the search result.
     return fetch("https://rest.uniprot.org/uniprotkb/" +
                  encodeURIComponent(acc) + ".json",
                  { headers: { Accept: "application/json" } })
@@ -20,6 +22,7 @@
         var ids = (data.uniProtKBCrossReferences || [])
           .filter(function (x) { return x.database === "PDB"; })
           .map(function (x) { return x.id; });
+        console.log("[Structure] " + acc + " → " + ids.length + " PDB IDs");
         pdbIdCache[acc] = ids;
         return ids;
       });
