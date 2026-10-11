@@ -3,8 +3,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Search — Provenance Tracker</title>
-<link rel="stylesheet" href="assets/css/design-system.css?v=14"/>
-<link rel="stylesheet" href="assets/css/pages.css?v=14"/>
+<link rel="stylesheet" href="assets/css/design-system.css?v=15"/>
+<link rel="stylesheet" href="assets/css/pages.css?v=15"/>
 <style>
   .evidence-badge{display:inline-block;padding:3px 10px;border-radius:999px;
     font-size:11px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;
@@ -47,9 +47,8 @@
   .prov-summary{font-size:12px;color:rgba(255,255,255,0.7);
     margin:6px 0 10px;font-style:italic}
   .prov-tree{margin-top:6px;font-size:13px;line-height:1.5}
-  .prov-node{padding:1px 0}
   .prov-row{display:flex;align-items:center;gap:10px;padding:4px 6px;
-    border-radius:8px;transition:background 0.15s}
+    border-radius:8px}
   .prov-row:hover{background:rgba(255,255,255,0.05)}
   .prov-arrow{color:rgba(255,255,255,0.55);font-size:12px;width:14px}
   .prov-name{color:rgba(255,255,255,0.92)}
@@ -62,6 +61,39 @@
     font-style:italic}
   .prov-children{border-left:1px dashed rgba(255,255,255,0.22);
     margin-left:14px;padding-left:6px}
+
+  /* Impact analysis */
+  .impact-section{margin-top:16px;padding-top:14px;
+    border-top:1px solid rgba(255,255,255,0.15)}
+  .impact-title{font-size:13px;letter-spacing:0.4px;text-transform:uppercase;
+    color:#fecaca;margin-bottom:10px;font-weight:700}
+  .impact-empty{font-size:12px;color:rgba(255,255,255,0.6);font-style:italic}
+  .impact-loading{font-size:12px;color:rgba(255,255,255,0.75)}
+  .impact-block{padding:12px;border-radius:12px;margin-bottom:10px;
+    background:rgba(239,68,68,0.10);border:1px solid rgba(239,68,68,0.5)}
+  .impact-pmid{font-size:12px;font-weight:700;color:#fecaca;margin-bottom:4px}
+  .impact-tag{background:#ef4444;color:#fff;padding:1px 7px;border-radius:4px;
+    font-size:10px;margin-right:6px}
+  .impact-paper{font-size:12px;color:rgba(255,255,255,0.85);
+    margin-bottom:8px;line-height:1.45}
+  .impact-count{font-size:13px;color:#fff;margin:8px 0 10px}
+  .impact-count strong{color:#fecaca;font-size:16px}
+  .impact-list{display:flex;flex-direction:column;gap:4px}
+  .impact-protein{display:flex;gap:8px;align-items:baseline;font-size:12px;
+    padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.08)}
+  .impact-protein:last-child{border-bottom:none}
+  .impact-protein a{color:#fbcfe8;text-decoration:none;font-weight:700;
+    font-family:ui-monospace,monospace;min-width:70px}
+  .impact-protein a:hover{text-decoration:underline}
+  .impact-name{color:rgba(255,255,255,0.85);flex:1;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .impact-protein small{color:rgba(255,255,255,0.5);font-style:italic;
+    font-size:11px}
+  .impact-more{font-size:11px;color:rgba(255,255,255,0.6);font-style:italic;
+    padding-top:6px}
+  .impact-total{font-size:14px;color:#fff;padding:12px 0 4px;
+    text-align:center;font-weight:600}
+  .impact-total strong{color:#fecaca;font-size:20px}
 </style>
 </head><body>
 
@@ -74,8 +106,7 @@
 <main class="glass-card">
   <section style="padding:32px 40px 12px;">
     <h2 style="font-size:24px;margin-bottom:8px;">Search Proteins</h2>
-    <p>Enter a UniProt accession (e.g. <code>P12345</code>) or a keyword.
-       Retracted sources and evidence hierarchy are shown automatically.</p>
+    <p>Enter a UniProt accession (e.g. <code>P12345</code>) or a keyword.</p>
   </section>
 
   <div class="search-bar">
@@ -91,13 +122,14 @@
   </section>
 </main>
 
-<script src="assets/js/config.js?v=14"></script>
-<script src="assets/js/bubbles.js?v=14"></script>
-<script src="assets/js/ui.js?v=14"></script>
-<script src="assets/js/api.js?v=14"></script>
-<script src="assets/js/evidence.js?v=14"></script>
-<script src="assets/js/retraction.js?v=14"></script>
-<script src="assets/js/provenance.js?v=14"></script>
+<script src="assets/js/config.js?v=15"></script>
+<script src="assets/js/bubbles.js?v=15"></script>
+<script src="assets/js/ui.js?v=15"></script>
+<script src="assets/js/api.js?v=15"></script>
+<script src="assets/js/evidence.js?v=15"></script>
+<script src="assets/js/retraction.js?v=15"></script>
+<script src="assets/js/provenance.js?v=15"></script>
+<script src="assets/js/impact.js?v=15"></script>
 
 <script>
 (function () {
@@ -184,13 +216,10 @@
       ? features.slice(0, 25).map(function (f) {
           return renderFeature(f, retractions);
         }).join("")
-        + (features.length > 25
-            ? '<div class="feature-meta" style="margin-top:8px">' +
-              (features.length - 25) + ' more features…</div>'
-            : '')
       : '<div class="feature-meta">This UniProt entry has no features.</div>';
 
     var provId = "prov-" + acc.replace(/[^A-Za-z0-9]/g, "_");
+    var impactId = "impact-" + acc.replace(/[^A-Za-z0-9]/g, "_");
 
     return (
       '<div class="glass-field result-card" style="margin-bottom:18px" data-acc="' + acc + '">' +
@@ -204,6 +233,9 @@
         '<div class="prov-section">' +
           '<div class="prov-header"><h5>🌳 Evidence Hierarchy</h5></div>' +
           '<div id="' + provId + '" class="prov-tree"></div>' +
+        '</div>' +
+        '<div class="impact-section">' +
+          '<div id="' + impactId + '"></div>' +
         '</div>' +
       '</div>'
     );
@@ -242,11 +274,19 @@
         out.innerHTML = results.map(function (r) {
           return renderProtein(r, retractions);
         }).join("");
+        // Auto-build hierarchies
         results.forEach(function (r) {
           var acc = r.primaryAccession || "";
           var id = "prov-" + acc.replace(/[^A-Za-z0-9]/g, "_");
           var box = document.getElementById(id);
           if (box) window.Provenance.renderForData(r, box);
+        });
+        // Run impact analysis
+        results.forEach(function (r) {
+          var acc = r.primaryAccession || "";
+          var impactId = "impact-" + acc.replace(/[^A-Za-z0-9]/g, "_");
+          var ibox = document.getElementById(impactId);
+          if (ibox) window.Impact.analyze(r, retractions, ibox);
         });
       });
     }).catch(function (e) {
@@ -263,7 +303,7 @@
   }
   go.addEventListener("click", run);
   q.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
-  console.log("[app] ready v14");
+  console.log("[app] ready v15 (impact analysis)");
 })();
 </script>
 </body></html>
