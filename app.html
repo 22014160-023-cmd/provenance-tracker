@@ -4,10 +4,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Search — BioOrigin</title>
 <link rel="icon" href="assets/img/favicon.svg"/>
-<link rel="stylesheet" href="assets/css/design-system.css?v=26"/>
-<link rel="stylesheet" href="assets/css/pages.css?v=26"/>
+<link rel="stylesheet" href="assets/css/design-system.css?v=27"/>
+<link rel="stylesheet" href="assets/css/pages.css?v=27"/>
 <style>
-  /* ---------- Frozen desktop layout ---------- */
+  /* ---------- Horizontal scroll wrapper — desktop layout frozen ---------- */
   .card-scroll{
     width:100%;
     overflow-x:auto;
@@ -29,12 +29,8 @@
     display:flex;justify-content:space-between;align-items:flex-start;
     gap:16px;flex-wrap:wrap;margin-bottom:18px;
   }
-  .collective-header h2{
-    font-size:22px;letter-spacing:-0.3px;margin-bottom:6px;
-  }
-  .collective-header .meta{
-    font-size:12.5px;color:rgba(255,255,255,0.62);
-  }
+  .collective-header h2{font-size:22px;letter-spacing:-0.3px;margin-bottom:6px}
+  .collective-header .meta{font-size:12.5px;color:rgba(255,255,255,0.62)}
   .collective-actions{display:flex;gap:8px;flex-wrap:wrap}
 
   .action-btn{
@@ -75,7 +71,6 @@
     border-radius:12px;background:rgba(255,255,255,0.05);
     border:1px solid rgba(255,255,255,0.12);
     overflow-x:auto;scrollbar-width:none;
-    -webkit-overflow-scrolling:touch;
   }
   .tab-strip::-webkit-scrollbar{display:none}
   .tab-btn{
@@ -95,33 +90,69 @@
   .tab-panel.active{display:block}
   @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-  /* Charts grid */
-  .chart-grid{display:grid;gap:16px;grid-template-columns:1fr 1fr}
+  /* ---------- CHARTS TAB: 4-chart grid + 3D side-by-side ---------- */
+  .charts-layout{
+    display:grid;
+    grid-template-columns:1fr 1fr 380px;   /* 2 charts wide, 3D on right */
+    grid-template-rows:auto auto;
+    gap:16px;
+    align-items:stretch;
+  }
   .chart-box{
     padding:6px 8px 2px;border-radius:14px;
     background:rgba(20,15,45,0.55);
     border:1px solid rgba(255,255,255,0.16);
     box-shadow:inset 0 1px 0 rgba(255,255,255,0.14);
-    height:360px;position:relative;overflow:hidden;
+    height:340px;position:relative;overflow:hidden;
   }
   .chart-box > div{width:100%;height:100%;touch-action:manipulation}
 
-  /* 3D viewer */
-  .view3d-wrap{
-    width:100%;min-height:420px;border-radius:14px;
+  /* 3D panel — spans both rows */
+  .view3d-box{
+    grid-column:3;
+    grid-row:1 / 3;
+    border-radius:14px;
     background:radial-gradient(circle at 50% 40%,
-      rgba(99,102,241,0.14),rgba(20,15,45,0.55));
-    border:1px solid rgba(255,255,255,0.14);
-    overflow:hidden;position:relative;
+      rgba(99,102,241,0.16),rgba(20,15,45,0.55));
+    border:1px solid rgba(255,255,255,0.16);
+    overflow:hidden;
+    position:relative;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.18);
   }
-  .mol-canvas{width:100%;height:420px;border-radius:12px;overflow:hidden}
+  .view3d-box .mol-canvas{width:100%;height:100%;border-radius:12px;overflow:hidden}
+
+  .view3d-title{
+    position:absolute;top:12px;left:14px;
+    font-size:11px;letter-spacing:0.8px;text-transform:uppercase;
+    color:rgba(255,255,255,0.85);font-weight:700;
+    display:flex;align-items:center;gap:8px;
+    z-index:5;
+  }
+  .view3d-title::before{
+    content:"";display:inline-block;width:3px;height:13px;
+    border-radius:2px;
+    background:linear-gradient(180deg,#a78bfa,#ec4899);
+    box-shadow:0 0 8px rgba(236,72,153,0.5);
+  }
+  .view3d-switch{
+    position:absolute;top:12px;right:14px;
+    font-size:10.5px;padding:5px 10px;
+    border-radius:999px;
+    background:rgba(255,255,255,0.12);
+    border:1px solid rgba(255,255,255,0.3);
+    color:#fff;cursor:pointer;font-weight:600;
+    font-family:inherit;z-index:5;
+    touch-action:manipulation;
+  }
+  .view3d-switch:hover{background:rgba(255,255,255,0.22)}
+
   .mol-loading,.mol-empty{
-    font-size:13px;color:rgba(255,255,255,0.7);
+    font-size:12px;color:rgba(255,255,255,0.7);
     padding:28px;text-align:center;font-style:italic;
   }
   .mol-meta{
-    font-size:12px;color:rgba(255,255,255,0.62);
-    margin-top:12px;text-align:center;
+    font-size:11px;color:rgba(255,255,255,0.6);
+    margin-top:8px;text-align:center;
   }
   .mol-meta a{color:#fbcfe8;text-decoration:none;border-bottom:1px dotted}
 
@@ -144,7 +175,6 @@
   .protein-item h4{
     font-size:14.5px;margin-bottom:4px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-    letter-spacing:-0.1px;
   }
   .protein-item .meta{
     font-size:12px;color:rgba(255,255,255,0.58);
@@ -210,8 +240,6 @@
   @media (max-width:600px){
     .collective-card{padding:18px 18px 24px;border-radius:16px}
     .collective-header h2{font-size:19px}
-    .chart-grid{gap:12px}
-    .chart-box{height:320px}
   }
 </style>
 </head><body>
@@ -225,7 +253,7 @@
 <main class="glass-card" style="max-width:1500px">
   <section style="padding:32px 40px 12px;">
     <h2 style="font-size:24px;margin-bottom:8px;letter-spacing:-0.3px;">🔬 Search Proteins</h2>
-    <p>Collective dashboard · provenance tree · 3D structure · PDF export.</p>
+    <p>Collective dashboard · rotating 3D · provenance tree · PDF export.</p>
   </section>
 
   <div class="search-bar">
@@ -247,17 +275,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
 <!-- Project scripts -->
-<script src="assets/js/config.js?v=26"></script>
-<script src="assets/js/bubbles.js?v=26"></script>
-<script src="assets/js/ui.js?v=26"></script>
-<script src="assets/js/api.js?v=26"></script>
-<script src="assets/js/evidence.js?v=26"></script>
-<script src="assets/js/retraction.js?v=26"></script>
-<script src="assets/js/impact.js?v=26"></script>
-<script src="assets/js/structure.js?v=26"></script>
-<script src="assets/js/collective.js?v=26"></script>
-<script src="assets/js/tree.js?v=26"></script>
-<script src="assets/js/pdf.js?v=26"></script>
+<script src="assets/js/config.js?v=27"></script>
+<script src="assets/js/bubbles.js?v=27"></script>
+<script src="assets/js/ui.js?v=27"></script>
+<script src="assets/js/api.js?v=27"></script>
+<script src="assets/js/evidence.js?v=27"></script>
+<script src="assets/js/retraction.js?v=27"></script>
+<script src="assets/js/impact.js?v=27"></script>
+<script src="assets/js/structure.js?v=27"></script>
+<script src="assets/js/collective.js?v=27"></script>
+<script src="assets/js/tree.js?v=27"></script>
+<script src="assets/js/pdf.js?v=27"></script>
 
 <script>
 (function () {
@@ -267,24 +295,21 @@
   var q   = document.getElementById("q");
   var go  = document.getElementById("go");
   var out = document.getElementById("out");
-  var latestResults = [];
-  var latestRetractions = {};
+  var currentProteinIndex = 0;
 
-  // ---------- guard ----------
   function ensureLibs() {
     var missing = [];
-    if (!window.BioAPI)    missing.push("BioAPI");
-    if (!window.Evidence)  missing.push("Evidence");
-    if (!window.Retraction)missing.push("Retraction");
+    if (!window.BioAPI)     missing.push("BioAPI");
+    if (!window.Evidence)   missing.push("Evidence");
+    if (!window.Retraction) missing.push("Retraction");
     if (missing.length) {
-      console.error("[BioOrigin] missing modules:", missing);
+      console.error("[BioOrigin] missing:", missing);
       out.innerHTML =
         '<div class="glass-field result-card" style="display:block;min-width:0">' +
         '<h4>Startup error</h4>' +
         '<div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:8px">' +
         'Missing: ' + missing.join(", ") +
-        '. Hard-refresh (Ctrl+Shift+R) or open in a private tab.</div>' +
-        '</div>';
+        '. Hard-refresh.</div></div>';
       return false;
     }
     return true;
@@ -306,7 +331,6 @@
     return t;
   }
 
-  // ---------- render collective card ----------
   function renderCollective(proteins, retractions) {
     var total = { high:0, medium:0, low:0, very_low:0, unknown:0 };
     var totalFeatures = 0;
@@ -345,24 +369,24 @@
           (pills ? '<div class="summary-bar">' + pills + '</div>' : '') +
 
           '<div class="tab-strip" id="tabstrip">' +
-            '<button class="tab-btn active" data-tab="charts">📈 Charts</button>' +
-            '<button class="tab-btn" data-tab="structure">🧬 3D</button>' +
+            '<button class="tab-btn active" data-tab="charts">📈 Charts + 3D</button>' +
             '<button class="tab-btn" data-tab="proteins">🧪 Proteins</button>' +
             '<button class="tab-btn" data-tab="tree">🌳 Tree</button>' +
             '<button class="tab-btn" data-tab="impact">💥 Impact</button>' +
           '</div>' +
 
           '<div class="tab-panel active" id="tab-charts">' +
-            '<div class="chart-grid">' +
+            '<div class="charts-layout">' +
               '<div class="chart-box"><div id="collective-donut"></div></div>' +
               '<div class="chart-box"><div id="collective-perprot"></div></div>' +
               '<div class="chart-box"><div id="collective-types"></div></div>' +
               '<div class="chart-box"><div id="collective-positions"></div></div>' +
+              '<div class="view3d-box">' +
+                '<div class="view3d-title">🧬 3D Structure</div>' +
+                '<button class="view3d-switch" id="switch3d">Next protein →</button>' +
+                '<div id="collective-3d"></div>' +
+              '</div>' +
             '</div>' +
-          '</div>' +
-
-          '<div class="tab-panel" id="tab-structure">' +
-            '<div class="view3d-wrap" id="collective-3d"></div>' +
           '</div>' +
 
           '<div class="tab-panel" id="tab-proteins">' +
@@ -405,7 +429,27 @@
     return html;
   }
 
-  // ---------- tab switching ----------
+  function load3D(proteins, index) {
+    var box3d = document.getElementById('collective-3d');
+    if (!box3d || !proteins.length) return;
+    index = index % proteins.length;
+    currentProteinIndex = index;
+    var acc = proteins[index].primaryAccession;
+
+    // update the switch button label
+    var btn = document.getElementById('switch3d');
+    if (btn) {
+      var label = proteins.length > 1
+        ? ('Next (' + acc + ') →')
+        : acc;
+      btn.textContent = label;
+    }
+
+    if (window.Structure) {
+      window.Structure.render(acc, box3d);
+    }
+  }
+
   function setupTabs(proteins, retractions) {
     var strip = document.getElementById('tabstrip');
     if (!strip) return;
@@ -421,16 +465,6 @@
       document.querySelectorAll('.tab-panel').forEach(function (p) {
         p.classList.toggle('active', p.id === 'tab-' + target);
       });
-
-      if (target === 'structure') {
-        var box3d = document.getElementById('collective-3d');
-        if (box3d && !box3d.dataset.built && proteins.length) {
-          box3d.dataset.built = "1";
-          if (window.Structure) {
-            window.Structure.render(proteins[0].primaryAccession, box3d);
-          }
-        }
-      }
 
       if (target === 'tree') {
         var treeBox = document.getElementById('collective-tree');
@@ -456,13 +490,24 @@
       if (navigator.vibrate) navigator.vibrate(8);
     });
 
-    // Chart tab is active by default — render charts immediately
+    // Render charts on the Charts tab immediately
     if (window.Collective) {
       setTimeout(function () { window.Collective.renderAll(proteins); }, 60);
     }
+
+    // Load the 3D viewer immediately on the charts tab
+    setTimeout(function () { load3D(proteins, 0); }, 120);
+
+    // Wire the "Next protein" switch button
+    var btn = document.getElementById('switch3d');
+    if (btn) {
+      btn.addEventListener('click', function () {
+        load3D(proteins, currentProteinIndex + 1);
+        if (navigator.vibrate) navigator.vibrate(8);
+      });
+    }
   }
 
-  // ---------- pdf + json buttons ----------
   function setupActions(proteins, retractions) {
     var pdfBtn = document.getElementById('pdf-collective');
     if (pdfBtn) {
@@ -520,7 +565,6 @@
     }
   }
 
-  // ---------- collect PMIDs ----------
   function collectAllPmids(results) {
     var set = {};
     results.forEach(function (r) {
@@ -531,10 +575,8 @@
     return Object.keys(set);
   }
 
-  // ---------- main search ----------
   function run() {
     if (!ensureLibs()) return;
-
     var t = q.value.trim();
     if (!t) { q.focus(); return; }
 
@@ -559,7 +601,6 @@
         return;
       }
       console.log("[BioOrigin] got", results.length, "proteins");
-      latestResults = results;
 
       out.innerHTML =
         '<div class="glass-field result-card" style="display:block;min-width:0">' +
@@ -567,7 +608,6 @@
 
       var pmids = collectAllPmids(results);
       return window.Retraction.checkPmids(pmids).then(function (retractions) {
-        latestRetractions = retractions;
         console.log("[BioOrigin] rendered");
         out.innerHTML = renderCollective(results, retractions);
         setupTabs(results, retractions);
@@ -577,26 +617,22 @@
       console.error("[BioOrigin] error:", e);
       out.innerHTML =
         '<div class="glass-field result-card" style="display:block;min-width:0">' +
-        '<h4>Error: ' + esc(e.message) + '</h4>' +
-        '<div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:8px">' +
-        'Check browser console for details.</div></div>';
+        '<h4>Error: ' + esc(e.message) + '</h4></div>';
     });
   }
 
-  // ---------- wire up ----------
   go.addEventListener("click", run);
   q.addEventListener("keydown", function (e) {
     if (e.key === "Enter") { e.preventDefault(); run(); }
   });
 
-  // Deep link: ?q=P12345
   var params = new URLSearchParams(window.location.search);
   if (params.get("q")) {
     q.value = params.get("q");
     setTimeout(run, 150);
   }
 
-  console.log("[BioOrigin] ready v26");
+  console.log("[BioOrigin] ready v27");
 })();
 </script>
 </body></html>
