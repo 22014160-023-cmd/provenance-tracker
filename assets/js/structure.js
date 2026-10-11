@@ -1,10 +1,12 @@
-// structure.js — PyMOL-style viewer with RCSB → AlphaFold → placeholder
+// structure.js — PyMOL-style 3D viewer with smart protein selection
 (function () {
   var cache = {};
+  var pdbIndexCache = {};
 
-  // ---------- 1) RCSB PDB lookup by UniProt accession ----------
-  // Uses RCSB search API to find experimental structures
+  // ---- RCSB PDB lookup by UniProt accession ----
   function findPDB(acc) {
+    if (pdbIndexCache[acc]) return Promise.resolve(pdbIndexCache[acc]);
+
     var url = "https://search.rcsb.org/rcsbsearch/v2/query";
     var payload = {
       query: {
@@ -19,7 +21,7 @@
       return_type: "entry",
       request_options: {
         paginate: { start: 0, limit: 5 },
-        results_content_type: ["experimental", "computational"],
+        results_content_type: ["experimental"],
         sort: [
           { sort_by: "rcsb_accession_info.deposit_date",
             direction: "desc" }
@@ -35,23 +37,21 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (data) {
         if (!data || !data.result_set || !data.result_set.length) return null;
-        // Prefer experimental entries (X-ray, NMR, EM)
         var ids = data.result_set.map(function (hit) { return hit.identifier; });
+        pdbIndexCache[acc] = ids;
         return ids;
       })
       .catch(function () { return null; });
   }
 
-  // ---------- 2) Fetch PDB structure file ----------
   function fetchPDB(pdbId) {
-    var url = "https://files.rcsb.org/download/" + pdbId + ".pdb";
-    return fetch(url).then(function (r) {
-      if (!r.ok) throw new Error("PDB " + r.status);
-      return r.text();
-    });
+    return fetch("https://files.rcsb.org/download/" + pdbId + ".pdb")
+      .then(function (r) {
+        if (!r.ok) throw new Error("PDB " + r.status);
+        return r.text();
+      });
   }
 
-  // ---------- 3) Fetch AlphaFold as fallback ----------
   function fetchAlphaFold(acc) {
     var urls = [
       "https://alphafold.ebi.ac.uk/files/AF-" + acc.toUpperCase() + "-F1-model_v4.pdb",
@@ -67,64 +67,9 @@
     }, Promise.reject());
   }
 
-  // ---------- 4) Style: PyMOL-like cartoon + stick ----------
-  function applyPyMOLStyle(viewer) {
-    // Clear any defaults
-    viewer.setStyle({}, {});
-
-    // Cartoon for the backbone — PyMOL default "spectrum" by residue
-    viewer.setStyle(
-      { "atom": "CA" },
-      {
-        cartoon: {
-          color: "spectrum",
-          style: "trace",
-          thickness: 0.4
-        }
-      }
-    );
-
-    // Full cartoon for all residues
-    viewer.setStyle(
-      { "atom": "*" },
-      {
-        cartoon: {
-          color: "spectrum",
-          arrows: true,
-          tubes: true,
-          thickness: 0.5
-        }
-      }
-    );
-
-    // Optional: sticks on the active site residues (hetatms)
-    viewer.setStyle(
-      { "hetflag": true },
-      {
-        stick: {
-          radius: 0.15,
-          colorscheme: "greenCarbon"
-        },
-        sphere: { radius: 0.3 }
-      }
-    );
-
-    // Backbone trace for a crisp ribbon silhouette
-    viewer.setStyle(
-      {},
-      {
-        cartoon: {
-          color: "spectrum",
-          opacity: 1.0
-        }
-      }
-    );
-  }
-
-  // ---------- 5) Render with metadata ----------
+  // ---- Render with PyMOL-style cartoon + sticks ----
   function renderModel(pdb, container, metaHtml) {
     container.innerHTML = '';
-
     var canvas = document.createElement('div');
     canvas.className = 'mol-canvas';
     canvas.style.width = '100%';
@@ -132,8 +77,7 @@
     container.appendChild(canvas);
 
     if (!window.$3Dmol) {
-      container.innerHTML =
-        '<div class="mol-empty">3D viewer unavailable.</div>';
+      container.innerHTML = '<div class="mol-empty">3D viewer unavailable.</div>';
       return;
     }
 
@@ -141,10 +85,9 @@
       backgroundColor: 'rgba(20,15,45,0.55)',
       antialias: true
     });
-
     viewer.addModel(pdb, 'pdb');
 
-    // PyMOL-style rendering
+    // PyMOL-style cartoon
     viewer.setStyle({}, {
       cartoon: {
         color: 'spectrum',
@@ -153,8 +96,7 @@
         thickness: 0.5
       }
     });
-
-    // Also show heteroatoms as sticks + spheres
+    // Heteroatoms as green-carbon sticks
     viewer.setStyle(
       { hetflag: true },
       {
@@ -163,73 +105,93 @@
       }
     );
 
-    // Light-gray background glow
     viewer.setBackgroundColor('rgba(20,15,45,0.55)');
-
     viewer.zoomTo();
-    viewer.zoom(1.1);
-    viewer.spin('y', 0.7);
+    viewer.zoom(1.05);
+    viewer.spin('y', 0.6);
     viewer.render();
 
-    // Metadata line below canvas
     var meta = document.createElement('div');
     meta.className = 'mol-meta';
     meta.innerHTML = metaHtml;
     container.appendChild(meta);
   }
 
-  // ---------- 6) Main entry ----------
-  function render(acc, container) {
-    container.innerHTML =
-      '<div class="mol-loading">' +
-      'Loading structure for <strong>' + acc + '</strong>…' +
-      '<div class="loading-bar"></div>' +
-      '<div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:8px">' +
-      'Trying RCSB PDB → AlphaFold DB</div>' +
-      '</div>';
-
-    // Try RCSB PDB first
-    return findPDB(acc)
-      .then(function (pdbIds) {
-        if (!pdbIds || !pdbIds.length) throw new Error("no PDB entries");
-        var primary = pdbIds[0];
-        console.log("[Structure] Using PDB:", primary);
-        return fetchPDB(primary).then(function (pdb) {
-          return {
-            source: "RCSB PDB",
-            pdbId: primary,
-            allIds: pdbIds,
-            pdb: pdb
-          };
-        });
-      })
-      .then(function (result) {
-        var meta = '🧬 <strong>Experimental structure</strong> · ' +
-                   '<a href="https://www.rcsb.org/structure/' + result.pdbId +
-                   '" target="_blank">PDB ' + result.pdbId + '</a>' +
-                   (result.allIds.length > 1
-                     ? ' · ' + (result.allIds.length - 1) + ' more in PDB'
-                     : '');
-        renderModel(result.pdb, container, meta);
-      })
-      .catch(function () {
-        // Fallback: AlphaFold
-        console.log("[Structure] PDB lookup failed, trying AlphaFold");
-        return fetchAlphaFold(acc)
-          .then(function (pdb) {
-            var meta = '🧬 <strong>Predicted structure</strong> · ' +
-                       '<a href="https://alphafold.ebi.ac.uk/entry/' + acc +
-                       '" target="_blank">AlphaFold DB</a> · ' + acc;
-            renderModel(pdb, container, meta);
-          })
-          .catch(function () {
-            console.log("[Structure] No structure available");
-            renderPlaceholder(acc, container);
-          });
+  // ---- Try one accession end-to-end ----
+  function tryOne(acc, container) {
+    return findPDB(acc).then(function (pdbIds) {
+      if (!pdbIds || !pdbIds.length) throw new Error("no PDB");
+      return fetchPDB(pdbIds[0]).then(function (pdb) {
+        renderModel(pdb, container,
+          '🧬 <strong>Experimental structure</strong> · ' +
+          'PDB <a href="https://www.rcsb.org/structure/' + pdbIds[0] +
+          '" target="_blank">' + pdbIds[0] + '</a>' +
+          (pdbIds.length > 1 ? ' · +' + (pdbIds.length - 1) + ' more' : '') +
+          ' · showing ' + acc);
+        return true;
       });
+    }).catch(function () {
+      return fetchAlphaFold(acc).then(function (pdb) {
+        renderModel(pdb, container,
+          '🧬 <strong>Predicted structure</strong> · ' +
+          '<a href="https://alphafold.ebi.ac.uk/entry/' + acc +
+          '" target="_blank">AlphaFold DB</a> · showing ' + acc);
+        return true;
+      }).catch(function () { return false; });
+    });
   }
 
-  // ---------- 7) Rotating DNA placeholder ----------
+  // ---- Pick a display protein from the search results ----
+  // Rules:
+  //   1. If only one protein → use it
+  //   2. Prefer proteins with the most features (most studied)
+  //   3. Try top 3, fall back gracefully
+  function rankCandidates(proteins) {
+    // Score each protein by:
+    //   - feature count (higher = more studied)
+    //   - reviewed status (Swiss-Prot > TrEMBL)
+    //   - length
+    return proteins.slice().sort(function (a, b) {
+      var aReviewed = a.entryType && a.entryType.indexOf("reviewed") >= 0 ? 1 : 0;
+      var bReviewed = b.entryType && b.entryType.indexOf("reviewed") >= 0 ? 1 : 0;
+      var aLen = (a.sequence && a.sequence.length) || 0;
+      var bLen = (b.sequence && b.sequence.length) || 0;
+      var aScore = (a.features || []).length * 10 + aReviewed * 100 + aLen;
+      var bScore = (b.features || []).length * 10 + bReviewed * 100 + bLen;
+      return bScore - aScore;
+    });
+  }
+
+  // ---- Main: render whatever protein has a structure ----
+  function renderFromSearch(proteins, container) {
+    container.innerHTML =
+      '<div class="mol-loading">Finding a representative structure…' +
+      '<div class="loading-bar"></div>' +
+      '<div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:8px">' +
+      'Trying up to 5 proteins from your search</div>' +
+      '</div>';
+
+    var ranked = rankCandidates(proteins).slice(0, 5);
+    var idx = 0;
+
+    function tryNext() {
+      if (idx >= ranked.length) {
+        renderPlaceholder(proteins[0].primaryAccession, container);
+        return;
+      }
+      var acc = ranked[idx].primaryAccession;
+      idx++;
+      console.log("[Structure] Trying", acc);
+
+      tryOne(acc, container).then(function (ok) {
+        if (!ok) tryNext();
+      }).catch(tryNext);
+    }
+
+    tryNext();
+  }
+
+  // ---- Placeholder when nothing is available ----
   function renderPlaceholder(acc, container) {
     container.innerHTML = '';
 
@@ -255,7 +217,6 @@
       '</linearGradient>';
     svg.appendChild(defs);
 
-    // Helices
     [['M -50 -60 Q 50 -30 -50 0 Q 50 30 -50 60'],
      ['M 50 -60 Q -50 -30 50 0 Q -50 30 50 60']].forEach(function (arr) {
       var p = document.createElementNS(ns, 'path');
@@ -285,10 +246,9 @@
       'font-size:11px;color:rgba(255,255,255,0.55);text-align:center;' +
       'letter-spacing:0.3px;max-width:90%;';
     label.innerHTML =
-      'No experimental or predicted structure for ' +
-      '<strong style="color:#fbcfe8">' + acc + '</strong><br>' +
+      'No experimental or predicted structure for this result set<br>' +
       '<span style="font-size:10.5px;opacity:0.8">' +
-      'Try P12345 · P00533 · P04637</span>';
+      'Try a specific protein like P04637 or P00533</span>';
     wrap.appendChild(label);
 
     container.appendChild(wrap);
@@ -305,6 +265,14 @@
     }
   }
 
-  window.Structure = { render: render };
-  console.log('[Structure] ready v4 — PyMOL style, RCSB-first');
+  window.Structure = {
+    render: function (acc, container) {
+      // Compat: single accession call
+      var fake = [{ primaryAccession: acc, features: [], sequence: {} }];
+      renderFromSearch(fake, container);
+    },
+    renderFromSearch: renderFromSearch,
+    findPDB: findPDB
+  };
+  console.log('[Structure] ready v5 — smart pick, RCSB-first');
 })();

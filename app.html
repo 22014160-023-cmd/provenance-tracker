@@ -4,8 +4,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Search — BioOrigin</title>
 <link rel="icon" href="assets/img/favicon.svg"/>
-<link rel="stylesheet" href="assets/css/design-system.css?v=28"/>
-<link rel="stylesheet" href="assets/css/pages.css?v=28"/>
+<link rel="stylesheet" href="assets/css/design-system.css?v=29"/>
+<link rel="stylesheet" href="assets/css/pages.css?v=29"/>
 <style>
   /* ---------- Horizontal scroll wrapper — desktop layout frozen ---------- */
   .card-scroll{
@@ -92,11 +92,14 @@
 
   /* ---------- CHARTS TAB: 4-chart grid + 3D side-by-side ---------- */
   .charts-layout{
-    display:grid;
-    grid-template-columns:1fr 1fr 380px;   /* 2 charts wide, 3D on right */
-    grid-template-rows:auto auto;
+    display:flex;
+    flex-direction:column;
     gap:16px;
-    align-items:stretch;
+  }
+  .charts-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
   }
   .chart-box{
     padding:6px 8px 2px;border-radius:14px;
@@ -107,10 +110,10 @@
   }
   .chart-box > div{width:100%;height:100%;touch-action:manipulation}
 
-  /* 3D panel — spans both rows */
+  /* 3D panel — full width below the chart grid */
   .view3d-box{
-    grid-column:3;
-    grid-row:1 / 3;
+    width:100%;
+    height:480px;
     border-radius:14px;
     background:radial-gradient(circle at 50% 40%,
       rgba(99,102,241,0.16),rgba(20,15,45,0.55));
@@ -122,9 +125,9 @@
   .view3d-box .mol-canvas{width:100%;height:100%;border-radius:12px;overflow:hidden}
 
   .view3d-title{
-    position:absolute;top:12px;left:14px;
+    position:absolute;top:14px;left:16px;
     font-size:11px;letter-spacing:0.8px;text-transform:uppercase;
-    color:rgba(255,255,255,0.85);font-weight:700;
+    color:rgba(255,255,255,0.88);font-weight:700;
     display:flex;align-items:center;gap:8px;
     z-index:5;
   }
@@ -134,17 +137,34 @@
     background:linear-gradient(180deg,#a78bfa,#ec4899);
     box-shadow:0 0 8px rgba(236,72,153,0.5);
   }
+  .view3d-source{
+    position:absolute;top:14px;right:16px;
+    font-size:10.5px;padding:5px 12px;border-radius:999px;
+    background:rgba(255,255,255,0.10);
+    border:1px solid rgba(255,255,255,0.28);
+    color:rgba(255,255,255,0.85);font-weight:600;
+    z-index:5;
+  }
   .view3d-switch{
-    position:absolute;top:12px;right:14px;
-    font-size:10.5px;padding:5px 10px;
+    position:absolute;bottom:14px;right:16px;
+    font-size:11px;padding:7px 14px;
     border-radius:999px;
-    background:rgba(255,255,255,0.12);
-    border:1px solid rgba(255,255,255,0.3);
+    background:rgba(255,255,255,0.14);
+    border:1px solid rgba(255,255,255,0.32);
     color:#fff;cursor:pointer;font-weight:600;
     font-family:inherit;z-index:5;
     touch-action:manipulation;
   }
-  .view3d-switch:hover{background:rgba(255,255,255,0.22)}
+  .view3d-switch:hover{background:rgba(255,255,255,0.24)}
+  .mol-loading,.mol-empty{
+    font-size:12px;color:rgba(255,255,255,0.7);
+    padding:28px;text-align:center;font-style:italic;
+  }
+  .mol-meta{
+    font-size:11px;color:rgba(255,255,255,0.6);
+    margin-top:8px;text-align:center;
+  }
+  .mol-meta a{color:#fbcfe8;text-decoration:none;border-bottom:1px dotted}
 
   .mol-loading,.mol-empty{
     font-size:12px;color:rgba(255,255,255,0.7);
@@ -275,17 +295,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
 <!-- Project scripts -->
-<script src="assets/js/config.js?v=28"></script>
-<script src="assets/js/bubbles.js?v=28"></script>
-<script src="assets/js/ui.js?v=28"></script>
-<script src="assets/js/api.js?v=28"></script>
-<script src="assets/js/evidence.js?v=28"></script>
-<script src="assets/js/retraction.js?v=28"></script>
-<script src="assets/js/impact.js?v=28"></script>
-<script src="assets/js/structure.js?v=28"></script>
-<script src="assets/js/collective.js?v=28"></script>
-<script src="assets/js/tree.js?v=28"></script>
-<script src="assets/js/pdf.js?v=28"></script>
+<script src="assets/js/config.js?v=29"></script>
+<script src="assets/js/bubbles.js?v=29"></script>
+<script src="assets/js/ui.js?v=29"></script>
+<script src="assets/js/api.js?v=29"></script>
+<script src="assets/js/evidence.js?v=29"></script>
+<script src="assets/js/retraction.js?v=29"></script>
+<script src="assets/js/impact.js?v=29"></script>
+<script src="assets/js/structure.js?v=29"></script>
+<script src="assets/js/collective.js?v=29"></script>
+<script src="assets/js/tree.js?v=29"></script>
+<script src="assets/js/pdf.js?v=29"></script>
 
 <script>
 (function () {
@@ -377,13 +397,18 @@
 
           '<div class="tab-panel active" id="tab-charts">' +
             '<div class="charts-layout">' +
-              '<div class="chart-box"><div id="collective-donut"></div></div>' +
-              '<div class="chart-box"><div id="collective-perprot"></div></div>' +
-              '<div class="chart-box"><div id="collective-types"></div></div>' +
-              '<div class="chart-box"><div id="collective-positions"></div></div>' +
+              '<div class="charts-row">' +
+                '<div class="chart-box"><div id="collective-donut"></div></div>' +
+                '<div class="chart-box"><div id="collective-perprot"></div></div>' +
+              '</div>' +
+              '<div class="charts-row">' +
+                '<div class="chart-box"><div id="collective-types"></div></div>' +
+                '<div class="chart-box"><div id="collective-positions"></div></div>' +
+              '</div>' +
               '<div class="view3d-box">' +
-                '<div class="view3d-title">🧬 3D Structure</div>' +
-                '<button class="view3d-switch" id="switch3d">Next protein →</button>' +
+                '<div class="view3d-title">🧬 Representative 3D Structure</div>' +
+                '<div class="view3d-source" id="view3d-source">Loading…</div>' +
+                '<button class="view3d-switch" id="switch3d">Next structure →</button>' +
                 '<div id="collective-3d"></div>' +
               '</div>' +
             '</div>' +
@@ -432,21 +457,16 @@
   function load3D(proteins, index) {
     var box3d = document.getElementById('collective-3d');
     if (!box3d || !proteins.length) return;
-    index = index % proteins.length;
-    currentProteinIndex = index;
-    var acc = proteins[index].primaryAccession;
+    currentProteinIndex = index || 0;
 
-    // update the switch button label
-    var btn = document.getElementById('switch3d');
-    if (btn) {
-      var label = proteins.length > 1
-        ? ('Next (' + acc + ') →')
-        : acc;
-      btn.textContent = label;
-    }
+    var sourceEl = document.getElementById('view3d-source');
+    if (sourceEl) sourceEl.textContent = 'Loading…';
 
     if (window.Structure) {
-      window.Structure.render(acc, box3d);
+      window.Structure.renderFromSearch(proteins, box3d);
+      setTimeout(function () {
+        if (sourceEl) sourceEl.textContent = proteins.length + ' candidates';
+      }, 500);
     }
   }
 
