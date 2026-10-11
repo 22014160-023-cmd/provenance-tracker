@@ -4,8 +4,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Search — BioOrigin</title>
 <link rel="icon" href="assets/img/favicon.svg"/>
-<link rel="stylesheet" href="assets/css/design-system.css?v=31"/>
-<link rel="stylesheet" href="assets/css/pages.css?v=31"/>
+<link rel="stylesheet" href="assets/css/design-system.css?v=32"/>
+<link rel="stylesheet" href="assets/css/pages.css?v=32"/>
 <style>
   /* ---------- Horizontal scroll wrapper — desktop layout frozen ---------- */
   .card-scroll{width:100%;padding-bottom:12px;}
@@ -301,6 +301,51 @@
     .collective-header h2{font-size:16px}
   }
 
+
+  @media (max-width: 900px){
+    .charts-row{grid-template-columns:1fr !important}
+    .chart-box{height:340px}
+    .view3d-box{height:auto;min-height:420px}
+  }
+  @media (max-width: 600px){
+    .collective-card{padding:18px 16px 22px;border-radius:16px}
+    .collective-header h2{font-size:17px}
+    .chart-box{height:320px;padding:8px 8px 4px}
+    .view3d-box{height:auto;min-height:380px}
+    .view3d-title{font-size:10px}
+    .view3d-source{font-size:9.5px}
+  }
+  @media (max-width: 400px){
+    .chart-box{height:300px}
+    .view3d-box{min-height:340px}
+  }
+
+  /* Ensure 3D canvas fills its parent */
+  .view3d-box{
+    display:flex;
+    flex-direction:column;
+    min-height:420px;
+    padding:0;
+    position:relative;
+  }
+  .view3d-box > #collective-3d,
+  .view3d-box > .mol-canvas{
+    flex:1 1 auto;
+    width:100%;
+    min-height:340px;
+  }
+  .view3d-box .mol-canvas{
+    width:100%;
+    height:auto;
+    min-height:340px;
+    display:block;
+  }
+  .view3d-box canvas{
+    width:100% !important;
+    height:100% !important;
+    display:block !important;
+  }
+
 </style>
 </head><body>
 
@@ -335,17 +380,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
 <!-- Project scripts -->
-<script src="assets/js/config.js?v=31"></script>
-<script src="assets/js/bubbles.js?v=31"></script>
-<script src="assets/js/ui.js?v=31"></script>
-<script src="assets/js/api.js?v=31"></script>
-<script src="assets/js/evidence.js?v=31"></script>
-<script src="assets/js/retraction.js?v=31"></script>
-<script src="assets/js/impact.js?v=31"></script>
-<script src="assets/js/structure.js?v=31"></script>
-<script src="assets/js/collective.js?v=31"></script>
-<script src="assets/js/tree.js?v=31"></script>
-<script src="assets/js/pdf.js?v=31"></script>
+<script src="assets/js/config.js?v=32"></script>
+<script src="assets/js/bubbles.js?v=32"></script>
+<script src="assets/js/ui.js?v=32"></script>
+<script src="assets/js/api.js?v=32"></script>
+<script src="assets/js/evidence.js?v=32"></script>
+<script src="assets/js/retraction.js?v=32"></script>
+<script src="assets/js/impact.js?v=32"></script>
+<script src="assets/js/structure.js?v=32"></script>
+<script src="assets/js/collective.js?v=32"></script>
+<script src="assets/js/tree.js?v=32"></script>
+<script src="assets/js/pdf.js?v=32"></script>
 
 <script>
 (function () {

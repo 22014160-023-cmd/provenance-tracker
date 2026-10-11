@@ -216,7 +216,17 @@
       yaxis: {
         showticklabels: false, gridcolor: 'rgba(255,255,255,0.06)',
         linecolor: 'rgba(255,255,255,0.3)'
-      }
+      },
+      legend: {
+        font: { size: 11, color: 'rgba(255,255,255,0.9)' },
+        bgcolor: 'rgba(20,15,45,0.55)',
+        bordercolor: 'rgba(255,255,255,0.2)',
+        borderwidth: 1,
+        orientation: 'h',
+        x: 0.5, xanchor: 'center',
+        y: 1.08, yanchor: 'bottom'
+      },
+      margin: { t: 80, r: 24, b: 40, l: 40 }
     });
 
     Plotly.newPlot(id, traces, layout, CONFIG);

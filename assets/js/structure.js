@@ -52,51 +52,80 @@
   // ---------- Render ----------
   function renderModel(model, format, container, metaHtml) {
     container.innerHTML = '';
+
+    // Explicit pixel height prevents collapse on some mobile browsers
+    var height = 380;
+    if (window.innerWidth < 600) height = 320;
+    if (window.innerWidth < 400) height = 280;
+
     var canvas = document.createElement('div');
     canvas.className = 'mol-canvas';
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
+    canvas.style.cssText =
+      'width:100%;' +
+      'height:' + height + 'px;' +
+      'min-height:' + height + 'px;' +
+      'display:block;position:relative;';
     container.appendChild(canvas);
 
     if (!window.$3Dmol) {
-      container.innerHTML = '<div class="mol-empty">3D viewer failed to load</div>';
+      container.innerHTML =
+        '<div class="mol-empty">3D viewer failed to load ' +
+        '(3Dmol.js CDN blocked?)</div>';
       return;
     }
 
-    var viewer = window.$3Dmol.createViewer(canvas, {
-      backgroundColor: 'rgba(20,15,45,0.55)',
-      antialias: true
-    });
-    viewer.addModel(model, format);
+    // Give the DOM a tick to lay out the canvas before WebGL init
+    setTimeout(function () {
+      try {
+        var viewer = window.$3Dmol.createViewer(canvas, {
+          backgroundColor: 'rgba(20,15,45,0.55)',
+          antialias: true
+        });
+        viewer.addModel(model, format);
 
-    viewer.setStyle({}, {
-      cartoon: {
-        color: 'spectrum',
-        arrows: true,
-        tubes: true,
-        thickness: 0.5
+        viewer.setStyle({}, {
+          cartoon: {
+            color: 'spectrum',
+            arrows: true,
+            tubes: true,
+            thickness: 0.5
+          }
+        });
+
+        try {
+          viewer.setStyle(
+            { hetflag: true },
+            {
+              stick: { radius: 0.15, colorscheme: 'greenCarbon' },
+              sphere: { radius: 0.25 }
+            }
+          );
+        } catch (e) {}
+
+        viewer.zoomTo();
+        viewer.zoom(1.05);
+        viewer.spin('y', 0.6);
+        viewer.render();
+
+        // Force a resize after a moment so it fills the box
+        setTimeout(function () {
+          try {
+            viewer.resize();
+            viewer.render();
+          } catch (e) {}
+        }, 200);
+
+        // Metadata line
+        var meta = document.createElement('div');
+        meta.className = 'mol-meta';
+        meta.innerHTML = metaHtml;
+        container.appendChild(meta);
+      } catch (e) {
+        console.error("[Structure] render failed:", e);
+        container.innerHTML =
+          '<div class="mol-empty">Render error: ' + e.message + '</div>';
       }
-    });
-
-    try {
-      viewer.setStyle(
-        { hetflag: true },
-        {
-          stick: { radius: 0.15, colorscheme: 'greenCarbon' },
-          sphere: { radius: 0.25 }
-        }
-      );
-    } catch (e) {}
-
-    viewer.zoomTo();
-    viewer.zoom(1.05);
-    viewer.spin('y', 0.6);
-    viewer.render();
-
-    var meta = document.createElement('div');
-    meta.className = 'mol-meta';
-    meta.innerHTML = metaHtml;
-    container.appendChild(meta);
+    }, 80);
   }
 
   // ---------- Try one protein: PDB first, AlphaFold fallback ----------
