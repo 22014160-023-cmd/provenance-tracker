@@ -4,8 +4,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Search — BioOrigin</title>
 <link rel="icon" href="assets/img/favicon.svg"/>
-<link rel="stylesheet" href="assets/css/design-system.css?v=36"/>
-<link rel="stylesheet" href="assets/css/pages.css?v=36"/>
+<link rel="stylesheet" href="assets/css/design-system.css?v=37"/>
+<link rel="stylesheet" href="assets/css/pages.css?v=37"/>
 <style>
   .card-scroll{width:100%;padding-bottom:12px;}
   .collective-card{
@@ -200,17 +200,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
-<script src="assets/js/config.js?v=36"></script>
-<script src="assets/js/bubbles.js?v=36"></script>
-<script src="assets/js/ui.js?v=36"></script>
-<script src="assets/js/api.js?v=36"></script>
-<script src="assets/js/evidence.js?v=36"></script>
-<script src="assets/js/retraction.js?v=36"></script>
-<script src="assets/js/impact.js?v=36"></script>
-<script src="assets/js/structure.js?v=36"></script>
-<script src="assets/js/collective.js?v=36"></script>
-<script src="assets/js/tree.js?v=36"></script>
-<script src="assets/js/pdf.js?v=36"></script>
+<script src="assets/js/config.js?v=37"></script>
+<script src="assets/js/bubbles.js?v=37"></script>
+<script src="assets/js/ui.js?v=37"></script>
+<script src="assets/js/api.js?v=37"></script>
+<script src="assets/js/evidence.js?v=37"></script>
+<script src="assets/js/retraction.js?v=37"></script>
+<script src="assets/js/impact.js?v=37"></script>
+<script src="assets/js/structure.js?v=37"></script>
+<script src="assets/js/collective.js?v=37"></script>
+<script src="assets/js/tree.js?v=37"></script>
+<script src="assets/js/pdf.js?v=37"></script>
 
 <script>
 (function () {
@@ -305,7 +305,7 @@
               '<div class="view3d-source" id="view3d-source">Loading…</div>' +
               '<div id="collective-3d"></div>' +
               '<div class="view3d-controls">' +
-                '<button class="view3d-btn" id="spin-toggle">⏸ Pause</button>' +
+                '<button class="view3d-btn paused" id="spin-toggle">▶ Play</button>' +
                 '<button class="view3d-btn" id="switch3d">Next structure →</button>' +
               '</div>' +
             '</div>' +
@@ -416,7 +416,7 @@
       spinBtn.addEventListener('click', function () {
         if (!window.Structure) return;
         var spinning = window.Structure.toggleSpin();
-        spinBtn.textContent = spinning ? '⏸ Pause' : '▶ Spin';
+        spinBtn.textContent = spinning ? '⏸ Pause' : '▶ Play';
         spinBtn.classList.toggle('paused', !spinning);
         if (navigator.vibrate) navigator.vibrate(6);
       });

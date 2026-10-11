@@ -2,7 +2,7 @@
 (function () {
   var pdbIdCache = {};
   var activeViewer = null;
-  var spinPaused = false;
+  var spinPaused = true;   // start paused — user opts in to rotation
   var lastKnownSpin = 0.35;
 
   // ---------- STEP 1: get PDB IDs from UniProt crossreferences ----------
