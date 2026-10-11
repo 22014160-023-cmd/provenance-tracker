@@ -4,116 +4,448 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Search — Provenance Tracker</title>
 <link rel="icon" href="assets/img/favicon.svg"/>
-<link rel="stylesheet" href="assets/css/design-system.css?v=17"/>
-<link rel="stylesheet" href="assets/css/pages.css?v=17"/>
+<link rel="stylesheet" href="assets/css/design-system.css?v=18"/>
+<link rel="stylesheet" href="assets/css/pages.css?v=18"/>
 <style>
-  .evidence-badge{display:inline-block;padding:3px 10px;border-radius:999px;
-    font-size:11px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;
-    border:1px solid currentColor;margin-left:8px;vertical-align:middle}
-  .evidence-dot{display:inline-block;width:10px;height:10px;border-radius:50%;
-    margin-right:8px;vertical-align:middle;box-shadow:0 0 8px currentColor}
-  .feature-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;
-    border-bottom:1px solid rgba(255,255,255,0.08)}
+  /* ============ Typography refinements ============ */
+  body { letter-spacing: -0.005em; }
+
+  /* ============ Evidence badge — refined ============ */
+  .evidence-badge{
+    display:inline-block;
+    padding:3px 10px;
+    border-radius:999px;
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    border:1px solid currentColor;
+    margin-left:8px;
+    vertical-align:middle;
+    background:rgba(255,255,255,0.04);
+  }
+  .evidence-dot{
+    display:inline-block;
+    width:9px;height:9px;
+    border-radius:50%;
+    margin-right:10px;
+    vertical-align:middle;
+    box-shadow:0 0 10px currentColor;
+    flex-shrink:0;
+    margin-top:5px;
+  }
+
+  /* ============ Feature rows — softer ============ */
+  .feature-row{
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+    padding:11px 10px;
+    border-bottom:1px solid rgba(255,255,255,0.05);
+    border-radius:8px;
+    transition:background 0.18s ease;
+  }
+  .feature-row:hover{
+    background:rgba(255,255,255,0.035);
+  }
   .feature-row:last-child{border-bottom:none}
   .feature-row.retracted{
-    background:rgba(239,68,68,0.12);border-radius:10px;
-    padding:10px 12px;margin:4px -12px;border-left:3px solid #ef4444}
-  .feature-text{flex:1;font-size:13px;color:rgba(255,255,255,0.9)}
-  .feature-meta{font-size:11px;color:rgba(255,255,255,0.6);margin-top:4px}
-  .chain-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap}
-  .chain-header h4{font-size:16px}
-  .chain-actions{display:flex;gap:8px}
-  .pdf-btn{font-size:11px;padding:6px 12px;border-radius:8px;
-    background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.6);
-    color:#fecaca;cursor:pointer;font-weight:600}
-  .pdf-btn:hover{background:rgba(239,68,68,0.3)}
-  .pdf-btn:disabled{opacity:0.5;cursor:wait}
-  .summary-bar{display:flex;gap:8px;flex-wrap:wrap;padding:10px 0 16px;
-    border-bottom:1px solid rgba(255,255,255,0.15);margin-bottom:12px}
-  .summary-pill{padding:4px 12px;border-radius:999px;font-size:12px;
-    font-weight:600;border:1px solid currentColor}
-  .retract-banner{display:flex;align-items:center;gap:12px;padding:14px 16px;
-    background:rgba(239,68,68,0.18);border:1px solid #ef4444;border-radius:14px;
-    margin-bottom:16px;font-size:13px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.5)}
-  .retract-banner .icon{font-size:22px}
+    background:rgba(239,68,68,0.10);
+    padding:11px 12px;
+    margin:6px -12px;
+    border-left:3px solid #ef4444;
+    border-radius:10px;
+  }
+  .feature-row.retracted:hover{
+    background:rgba(239,68,68,0.14);
+  }
+  .feature-text{
+    flex:1;
+    font-size:13.5px;
+    color:rgba(255,255,255,0.92);
+    line-height:1.45;
+  }
+  .feature-meta{
+    font-size:11.5px;
+    color:rgba(255,255,255,0.58);
+    margin-top:5px;
+    letter-spacing:0.1px;
+  }
+
+  /* ============ Card header ============ */
+  .chain-header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  .chain-header h4{
+    font-size:16.5px;
+    letter-spacing:-0.2px;
+    line-height:1.3;
+    margin-bottom:3px;
+  }
+  .chain-header small{
+    font-size:12px;
+    color:rgba(255,255,255,0.6);
+    letter-spacing:0.1px;
+  }
+  .chain-actions{display:flex;gap:8px;flex-shrink:0}
+
+  /* ============ PDF button — refined ============ */
+  .pdf-btn{
+    font-size:11.5px;
+    padding:7px 14px;
+    border-radius:9px;
+    background:rgba(239,68,68,0.16);
+    border:1px solid rgba(239,68,68,0.55);
+    color:#fecaca;
+    cursor:pointer;
+    font-weight:600;
+    letter-spacing:0.2px;
+    transition:all 0.18s ease;
+    font-family:inherit;
+  }
+  .pdf-btn:hover{
+    background:rgba(239,68,68,0.28);
+    transform:translateY(-1px);
+    box-shadow:0 4px 14px rgba(239,68,68,0.28);
+  }
+  .pdf-btn:disabled{opacity:0.5;cursor:wait;transform:none}
+
+  /* ============ Summary pills ============ */
+  .summary-bar{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    padding:12px 0 16px;
+    border-bottom:1px solid rgba(255,255,255,0.10);
+    margin-bottom:16px;
+  }
+  .summary-pill{
+    padding:4px 12px;
+    border-radius:999px;
+    font-size:11.5px;
+    font-weight:600;
+    letter-spacing:0.2px;
+    border:1px solid currentColor;
+    background:rgba(255,255,255,0.03);
+  }
+
+  /* ============ Retraction banner ============ */
+  .retract-banner{
+    display:flex;align-items:center;gap:12px;
+    padding:13px 16px;
+    background:rgba(239,68,68,0.14);
+    border:1px solid rgba(239,68,68,0.55);
+    border-left:3px solid #ef4444;
+    border-radius:12px;
+    margin-bottom:18px;
+    font-size:13px;
+    color:#fff;
+    letter-spacing:0.1px;
+    line-height:1.5;
+  }
+  .retract-banner .icon{font-size:20px;flex-shrink:0}
   .retract-banner strong{color:#fecaca}
-  .retract-tag{display:inline-block;padding:2px 8px;border-radius:6px;
-    background:#ef4444;color:#fff;font-size:10px;font-weight:800;
-    letter-spacing:0.5px;margin-left:8px;vertical-align:middle}
-  .loading-bar{height:3px;background:linear-gradient(90deg,transparent,
-    rgba(255,255,255,0.8),transparent);background-size:200% 100%;
-    animation:slide 1.2s linear infinite;border-radius:2px;margin:10px 0}
+  .retract-tag{
+    display:inline-block;
+    padding:2px 8px;
+    border-radius:5px;
+    background:#ef4444;
+    color:#fff;
+    font-size:9.5px;
+    font-weight:800;
+    letter-spacing:0.6px;
+    margin-left:8px;
+    vertical-align:middle;
+  }
+
+  /* ============ Loading bar ============ */
+  .loading-bar{
+    height:2px;
+    background:linear-gradient(90deg,transparent,
+      rgba(255,255,255,0.85),transparent);
+    background-size:200% 100%;
+    animation:slide 1.2s linear infinite;
+    border-radius:2px;
+    margin:12px 0 4px;
+  }
   @keyframes slide{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-  .section{margin-top:18px;padding-top:14px;
-    border-top:1px solid rgba(255,255,255,0.15)}
-  .section h5{font-size:13px;letter-spacing:0.4px;text-transform:uppercase;
-    color:rgba(255,255,255,0.85);margin-bottom:10px}
+  /* ============ Sections — with accent bars ============ */
+  .section{
+    margin-top:22px;
+    padding-top:16px;
+    border-top:1px solid rgba(255,255,255,0.10);
+  }
+  .section h5{
+    font-size:11.5px;
+    letter-spacing:0.8px;
+    text-transform:uppercase;
+    color:rgba(255,255,255,0.92);
+    margin-bottom:12px;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .section h5::before{
+    content:"";
+    display:inline-block;
+    width:3px;
+    height:14px;
+    border-radius:2px;
+    background:linear-gradient(180deg,#a78bfa,#ec4899);
+    box-shadow:0 0 8px rgba(236,72,153,0.5);
+  }
 
-  /* 3D viewer */
-  .mol-canvas{border-radius:12px;background:rgba(255,255,255,0.03);
-    border:1px solid rgba(255,255,255,0.15);overflow:hidden;
-    position:relative}
-  .mol-loading,.mol-empty{font-size:12px;color:rgba(255,255,255,0.7);
-    padding:20px;text-align:center;font-style:italic}
-  .mol-meta{font-size:11px;color:rgba(255,255,255,0.6);
-    margin-top:8px;text-align:center}
-  .mol-meta a{color:#fbcfe8;text-decoration:none}
-  .mol-meta a:hover{text-decoration:underline}
+  /* ============ 3D viewer ============ */
+  .mol-canvas{
+    border-radius:12px;
+    background:radial-gradient(circle at 50% 40%,
+      rgba(99,102,241,0.10),rgba(255,255,255,0.02));
+    border:1px solid rgba(255,255,255,0.12);
+    overflow:hidden;
+    position:relative;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+  .mol-loading,.mol-empty{
+    font-size:12px;
+    color:rgba(255,255,255,0.65);
+    padding:24px;
+    text-align:center;
+    font-style:italic;
+    letter-spacing:0.2px;
+  }
+  .mol-meta{
+    font-size:11.5px;
+    color:rgba(255,255,255,0.6);
+    margin-top:10px;
+    text-align:center;
+    letter-spacing:0.1px;
+  }
+  .mol-meta a{
+    color:#fbcfe8;
+    text-decoration:none;
+    border-bottom:1px dotted rgba(251,207,232,0.4);
+  }
+  .mol-meta a:hover{
+    border-bottom-style:solid;
+    border-bottom-color:#fbcfe8;
+  }
 
-  /* Charts 2x2 grid */
-  .charts-grid{display:grid;gap:14px;margin-top:10px}
+  /* ============ Charts grid — refined container ============ */
+  .charts-grid{
+    display:grid;
+    gap:16px;
+    margin-top:12px;
+  }
   @media (min-width:760px){.charts-grid{grid-template-columns:1fr 1fr}}
-  .chart-box{padding:12px;border-radius:12px;
-    background:rgba(255,255,255,0.04);
-    border:1px solid rgba(255,255,255,0.15);
-    height:280px;position:relative}
-  .chart-box canvas{max-height:240px}
 
-  /* Provenance tree */
-  .prov-summary{font-size:12px;color:rgba(255,255,255,0.7);
-    margin:6px 0 10px;font-style:italic}
-  .prov-tree{margin-top:6px;font-size:13px;line-height:1.5}
-  .prov-row{display:flex;align-items:center;gap:10px;padding:4px 6px;
-    border-radius:8px}
-  .prov-row:hover{background:rgba(255,255,255,0.05)}
-  .prov-arrow{color:rgba(255,255,255,0.55);font-size:12px;width:14px}
-  .prov-name{color:rgba(255,255,255,0.92)}
-  .prov-org{color:rgba(255,255,255,0.55);font-style:italic;margin-left:auto;
-    font-size:11px}
-  .prov-count{display:inline-block;padding:1px 8px;border-radius:999px;
-    font-size:11px;font-weight:700;margin-left:6px;border:1px solid}
-  .prov-example{opacity:0.75;font-size:12px}
-  .prov-empty{color:rgba(255,255,255,0.6);font-size:12px;padding:10px 0;
-    font-style:italic}
-  .prov-children{border-left:1px dashed rgba(255,255,255,0.22);
-    margin-left:14px;padding-left:6px}
+  .chart-box{
+    padding:14px 14px 10px;
+    border-radius:14px;
+    background:rgba(255,255,255,0.035);
+    border:1px solid rgba(255,255,255,0.13);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.12);
+    height:290px;
+    position:relative;
+    overflow:hidden;
+    animation:chartFade 0.5s ease-out;
+  }
+  @keyframes chartFade{
+    from{opacity:0;transform:translateY(8px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+  .chart-box canvas{max-height:250px !important}
 
-  /* Impact analysis */
-  .impact-title{font-size:13px;letter-spacing:0.4px;text-transform:uppercase;
-    color:#fecaca;margin-bottom:10px;font-weight:700}
-  .impact-empty{font-size:12px;color:rgba(255,255,255,0.6);font-style:italic}
-  .impact-loading{font-size:12px;color:rgba(255,255,255,0.75)}
-  .impact-block{padding:12px;border-radius:12px;margin-bottom:10px;
-    background:rgba(239,68,68,0.10);border:1px solid rgba(239,68,68,0.5)}
-  .impact-pmid{font-size:12px;font-weight:700;color:#fecaca;margin-bottom:4px}
-  .impact-tag{background:#ef4444;color:#fff;padding:1px 7px;border-radius:4px;
-    font-size:10px;margin-right:6px}
-  .impact-paper{font-size:12px;color:rgba(255,255,255,0.85);
-    margin-bottom:8px;line-height:1.45}
-  .impact-count{font-size:13px;color:#fff;margin:8px 0 10px}
-  .impact-count strong{color:#fecaca;font-size:16px}
-  .impact-protein{display:flex;gap:8px;align-items:baseline;font-size:12px;
-    padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.08)}
-  .impact-protein a{color:#fbcfe8;text-decoration:none;font-weight:700;
-    font-family:ui-monospace,monospace;min-width:70px}
-  .impact-protein small{color:rgba(255,255,255,0.5);font-style:italic;
-    font-size:11px}
-  .impact-more{font-size:11px;color:rgba(255,255,255,0.6);font-style:italic;
-    padding-top:6px}
-  .impact-total{font-size:14px;color:#fff;padding:12px 0 4px;
-    text-align:center;font-weight:600}
-  .impact-total strong{color:#fecaca;font-size:20px}
+  /* ============ Provenance tree ============ */
+  .prov-summary{
+    font-size:12px;
+    color:rgba(255,255,255,0.65);
+    margin:6px 0 12px;
+    font-style:italic;
+    letter-spacing:0.1px;
+  }
+  .prov-tree{margin-top:8px;font-size:13px;line-height:1.55}
+  .prov-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:5px 8px;
+    border-radius:8px;
+    transition:background 0.15s ease;
+  }
+  .prov-row:hover{background:rgba(255,255,255,0.045)}
+  .prov-arrow{
+    color:rgba(255,255,255,0.5);
+    font-size:12px;
+    width:14px;
+    flex-shrink:0;
+  }
+  .prov-name{
+    color:rgba(255,255,255,0.93);
+    letter-spacing:0.05px;
+  }
+  .prov-org{
+    color:rgba(255,255,255,0.5);
+    font-style:italic;
+    margin-left:auto;
+    font-size:11px;
+    letter-spacing:0.1px;
+  }
+  .prov-count{
+    display:inline-block;
+    padding:1px 9px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:700;
+    margin-left:6px;
+    border:1px solid;
+  }
+  .prov-example{opacity:0.7;font-size:12px}
+  .prov-empty{
+    color:rgba(255,255,255,0.55);
+    font-size:12px;
+    padding:14px 0;
+    font-style:italic;
+    letter-spacing:0.15px;
+  }
+  .prov-children{
+    border-left:1px dashed rgba(255,255,255,0.18);
+    margin-left:14px;
+    padding-left:8px;
+  }
+
+  /* ============ Impact analysis ============ */
+  .impact-title{
+    font-size:11.5px;
+    letter-spacing:0.8px;
+    text-transform:uppercase;
+    color:#fecaca;
+    margin-bottom:12px;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .impact-title::before{
+    content:"";
+    display:inline-block;
+    width:3px;
+    height:14px;
+    border-radius:2px;
+    background:linear-gradient(180deg,#f87171,#dc2626);
+    box-shadow:0 0 8px rgba(220,38,38,0.5);
+  }
+  .impact-empty{
+    font-size:12px;
+    color:rgba(255,255,255,0.55);
+    font-style:italic;
+    letter-spacing:0.15px;
+  }
+  .impact-loading{font-size:12px;color:rgba(255,255,255,0.7)}
+
+  .impact-block{
+    padding:14px;
+    border-radius:12px;
+    margin-bottom:12px;
+    background:rgba(239,68,68,0.08);
+    border:1px solid rgba(239,68,68,0.4);
+    border-left:3px solid #ef4444;
+  }
+  .impact-pmid{
+    font-size:12px;
+    font-weight:700;
+    color:#fecaca;
+    margin-bottom:6px;
+    letter-spacing:0.2px;
+  }
+  .impact-tag{
+    background:#ef4444;
+    color:#fff;
+    padding:2px 8px;
+    border-radius:5px;
+    font-size:9.5px;
+    font-weight:800;
+    letter-spacing:0.5px;
+    margin-right:8px;
+  }
+  .impact-paper{
+    font-size:12px;
+    color:rgba(255,255,255,0.82);
+    margin-bottom:10px;
+    line-height:1.55;
+    font-style:italic;
+  }
+  .impact-count{
+    font-size:13px;
+    color:#fff;
+    margin:10px 0 12px;
+    letter-spacing:0.1px;
+  }
+  .impact-count strong{color:#fecaca;font-size:17px}
+
+  .impact-protein{
+    display:flex;
+    gap:10px;
+    align-items:baseline;
+    font-size:12px;
+    padding:5px 0;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .impact-protein:last-child{border-bottom:none}
+  .impact-protein a{
+    color:#fbcfe8;
+    text-decoration:none;
+    font-weight:700;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    min-width:72px;
+    letter-spacing:0;
+  }
+  .impact-protein a:hover{
+    text-decoration:underline;
+    text-decoration-color:#fbcfe8;
+  }
+  .impact-protein small{
+    color:rgba(255,255,255,0.45);
+    font-style:italic;
+    font-size:11px;
+    margin-left:auto;
+  }
+  .impact-more{
+    font-size:11px;
+    color:rgba(255,255,255,0.55);
+    font-style:italic;
+    padding-top:8px;
+  }
+  .impact-total{
+    font-size:14px;
+    color:#fff;
+    padding:14px 0 4px;
+    text-align:center;
+    font-weight:600;
+    letter-spacing:0.1px;
+  }
+  .impact-total strong{color:#fecaca;font-size:20px;letter-spacing:-0.3px}
+
+  /* ============ Search bar refinement ============ */
+  .search-bar input{
+    letter-spacing:0.05px;
+    font-size:15px;
+  }
+
+  /* ============ Mobile tweaks ============ */
+  @media (max-width:600px){
+    .section{margin-top:18px;padding-top:14px}
+    .chart-box{height:250px;padding:12px 12px 8px}
+    .chart-box canvas{max-height:210px !important}
+    .chain-header h4{font-size:15.5px}
+    .feature-row{padding:10px 8px}
+  }
 </style>
 </head><body>
 
@@ -125,7 +457,7 @@
 
 <main class="glass-card">
   <section style="padding:32px 40px 12px;">
-    <h2 style="font-size:24px;margin-bottom:8px;">Search Proteins</h2>
+    <h2 style="font-size:24px;margin-bottom:8px;letter-spacing:-0.3px;">Search Proteins</h2>
     <p>Evidence · retractions · 3D structure · reliability charts · PDF export.</p>
   </section>
 
@@ -148,18 +480,21 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
+<!-- theme patches (must come before charts.js) -->
+<script src="assets/js/patches.js?v=18"></script>
+
 <!-- project scripts -->
-<script src="assets/js/config.js?v=17"></script>
-<script src="assets/js/bubbles.js?v=17"></script>
-<script src="assets/js/ui.js?v=17"></script>
-<script src="assets/js/api.js?v=17"></script>
-<script src="assets/js/evidence.js?v=17"></script>
-<script src="assets/js/retraction.js?v=17"></script>
-<script src="assets/js/provenance.js?v=17"></script>
-<script src="assets/js/impact.js?v=17"></script>
-<script src="assets/js/structure.js?v=17"></script>
-<script src="assets/js/charts.js?v=17"></script>
-<script src="assets/js/pdf.js?v=17"></script>
+<script src="assets/js/config.js?v=18"></script>
+<script src="assets/js/bubbles.js?v=18"></script>
+<script src="assets/js/ui.js?v=18"></script>
+<script src="assets/js/api.js?v=18"></script>
+<script src="assets/js/evidence.js?v=18"></script>
+<script src="assets/js/retraction.js?v=18"></script>
+<script src="assets/js/provenance.js?v=18"></script>
+<script src="assets/js/impact.js?v=18"></script>
+<script src="assets/js/structure.js?v=18"></script>
+<script src="assets/js/charts.js?v=18"></script>
+<script src="assets/js/pdf.js?v=18"></script>
 
 <script>
 (function () {
@@ -171,7 +506,6 @@
   function looksLikeAccession(s) {
     return /^[A-Z][A-Z0-9]{5,9}$/i.test(s) && /\d/.test(s);
   }
-
   function safeId(acc) { return acc.replace(/[^A-Za-z0-9]/g, "_"); }
 
   function renderFeature(feature, retractions) {
@@ -325,27 +659,22 @@
           return renderProtein(r, retractions);
         }).join("");
 
-        // Render sub-components per protein
         results.forEach(function (r) {
           var acc = r.primaryAccession || "";
           var sid = safeId(acc);
           var features = (r.features || []).slice(0, 200);
 
-          // 3D
           var molBox = document.getElementById("mol-" + sid);
           if (molBox) window.Structure.render(acc, molBox);
 
-          // Charts
           var prefix = "chart-" + sid;
           if (document.getElementById(prefix + "-donut")) {
             window.ReliabilityCharts.renderAll(prefix, features, retractions);
           }
 
-          // Hierarchy
           var provBox = document.getElementById("prov-" + sid);
           if (provBox) window.Provenance.renderForData(r, provBox);
 
-          // Impact
           var impactBox = document.getElementById("impact-" + sid);
           if (impactBox) window.Impact.analyze(r, retractions, impactBox);
         });
@@ -357,7 +686,6 @@
     });
   }
 
-  // PDF button handler
   document.addEventListener("click", function (e) {
     var btn = e.target.closest(".pdf-btn");
     if (!btn) return;
@@ -374,7 +702,7 @@
   }
   go.addEventListener("click", run);
   q.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
-  console.log("[app] ready v17 — 3D + charts + PDF");
+  console.log("[app] ready v18 — styled");
 })();
 </script>
 </body></html>
