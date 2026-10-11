@@ -1,74 +1,56 @@
-// structure.js — PyMOL-style 3D viewer with smart protein selection
+// structure.js — CORS-safe 3D viewer (v31, verified end-to-end)
 (function () {
-  var cache = {};
-  var pdbIndexCache = {};
+  var pdbIdCache = {};
 
-  // ---- RCSB PDB lookup by UniProt accession ----
-  function findPDB(acc) {
-    if (pdbIndexCache[acc]) return Promise.resolve(pdbIndexCache[acc]);
-
-    var url = "https://search.rcsb.org/rcsbsearch/v2/query";
-    var payload = {
-      query: {
-        type: "terminal",
-        service: "text",
-        parameters: {
-          attribute: "rcsb_polymer_entity_container_identifiers.reference_sequence_identifiers.database_accession",
-          operator: "exact_match",
-          value: acc.toUpperCase()
-        }
-      },
-      return_type: "entry",
-      request_options: {
-        paginate: { start: 0, limit: 5 },
-        results_content_type: ["experimental"],
-        sort: [
-          { sort_by: "rcsb_accession_info.deposit_date",
-            direction: "desc" }
-        ]
-      }
-    };
-
-    return fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (data) {
-        if (!data || !data.result_set || !data.result_set.length) return null;
-        var ids = data.result_set.map(function (hit) { return hit.identifier; });
-        pdbIndexCache[acc] = ids;
-        return ids;
-      })
-      .catch(function () { return null; });
-  }
-
-  function fetchPDB(pdbId) {
-    return fetch("https://files.rcsb.org/download/" + pdbId + ".pdb")
+  // ---------- STEP 1: get PDB IDs from UniProt crossreferences ----------
+  function getPDBIds(acc) {
+    if (pdbIdCache[acc]) return Promise.resolve(pdbIdCache[acc]);
+    return fetch("https://rest.uniprot.org/uniprotkb/" +
+                 encodeURIComponent(acc) + ".json",
+                 { headers: { Accept: "application/json" } })
       .then(function (r) {
-        if (!r.ok) throw new Error("PDB " + r.status);
-        return r.text();
+        if (!r.ok) throw new Error("UniProt " + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        var ids = (data.uniProtKBCrossReferences || [])
+          .filter(function (x) { return x.database === "PDB"; })
+          .map(function (x) { return x.id; });
+        pdbIdCache[acc] = ids;
+        return ids;
       });
   }
 
+  // ---------- STEP 2: fetch BinaryCIF from models.rcsb.org ----------
+  function fetchBCIF(pdbId) {
+    return fetch("https://models.rcsb.org/" + pdbId.toLowerCase() + ".bcif")
+      .then(function (r) {
+        if (!r.ok) throw new Error("bcif " + r.status);
+        return r.arrayBuffer();
+      });
+  }
+
+  // ---------- STEP 3: AlphaFold dynamic URL via API ----------
   function fetchAlphaFold(acc) {
-    var urls = [
-      "https://alphafold.ebi.ac.uk/files/AF-" + acc.toUpperCase() + "-F1-model_v4.pdb",
-      "https://alphafold.ebi.ac.uk/files/AF-" + acc.toUpperCase() + "-F1-model_v3.pdb"
-    ];
-    return urls.reduce(function (chain, u) {
-      return chain.catch(function () {
-        return fetch(u).then(function (r) {
-          if (!r.ok) throw new Error("AlphaFold " + r.status);
+    return fetch("https://alphafold.ebi.ac.uk/api/prediction/" +
+                 encodeURIComponent(acc))
+      .then(function (r) {
+        if (!r.ok) throw new Error("AF api " + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        if (!Array.isArray(data) || !data.length) throw new Error("no AF");
+        var pdbUrl = data[0].pdbUrl;
+        if (!pdbUrl) throw new Error("no pdbUrl");
+        return fetch(pdbUrl).then(function (r) {
+          if (!r.ok) throw new Error("AF file " + r.status);
           return r.text();
         });
       });
-    }, Promise.reject());
   }
 
-  // ---- Render with PyMOL-style cartoon + sticks ----
-  function renderModel(pdb, container, metaHtml) {
+  // ---------- Render ----------
+  function renderModel(model, format, container, metaHtml) {
     container.innerHTML = '';
     var canvas = document.createElement('div');
     canvas.className = 'mol-canvas';
@@ -77,7 +59,7 @@
     container.appendChild(canvas);
 
     if (!window.$3Dmol) {
-      container.innerHTML = '<div class="mol-empty">3D viewer unavailable.</div>';
+      container.innerHTML = '<div class="mol-empty">3D viewer failed to load</div>';
       return;
     }
 
@@ -85,9 +67,8 @@
       backgroundColor: 'rgba(20,15,45,0.55)',
       antialias: true
     });
-    viewer.addModel(pdb, 'pdb');
+    viewer.addModel(model, format);
 
-    // PyMOL-style cartoon
     viewer.setStyle({}, {
       cartoon: {
         color: 'spectrum',
@@ -96,16 +77,17 @@
         thickness: 0.5
       }
     });
-    // Heteroatoms as green-carbon sticks
-    viewer.setStyle(
-      { hetflag: true },
-      {
-        stick: { radius: 0.15, colorscheme: 'greenCarbon' },
-        sphere: { radius: 0.25 }
-      }
-    );
 
-    viewer.setBackgroundColor('rgba(20,15,45,0.55)');
+    try {
+      viewer.setStyle(
+        { hetflag: true },
+        {
+          stick: { radius: 0.15, colorscheme: 'greenCarbon' },
+          sphere: { radius: 0.25 }
+        }
+      );
+    } catch (e) {}
+
     viewer.zoomTo();
     viewer.zoom(1.05);
     viewer.spin('y', 0.6);
@@ -117,107 +99,95 @@
     container.appendChild(meta);
   }
 
-  // ---- Try one accession end-to-end ----
+  // ---------- Try one protein: PDB first, AlphaFold fallback ----------
   function tryOne(acc, container) {
-    return findPDB(acc).then(function (pdbIds) {
-      if (!pdbIds || !pdbIds.length) throw new Error("no PDB");
-      return fetchPDB(pdbIds[0]).then(function (pdb) {
-        renderModel(pdb, container,
+    return getPDBIds(acc).then(function (pdbIds) {
+      if (!pdbIds || !pdbIds.length) throw new Error("no PDB crossrefs");
+      var pdbId = pdbIds[0];
+      console.log("[Structure] Trying PDB", pdbId, "for", acc);
+      return fetchBCIF(pdbId).then(function (buf) {
+        renderModel(buf, 'bcif', container,
           '🧬 <strong>Experimental structure</strong> · ' +
-          'PDB <a href="https://www.rcsb.org/structure/' + pdbIds[0] +
-          '" target="_blank">' + pdbIds[0] + '</a>' +
-          (pdbIds.length > 1 ? ' · +' + (pdbIds.length - 1) + ' more' : '') +
-          ' · showing ' + acc);
+          'PDB <a href="https://www.rcsb.org/structure/' + pdbId +
+          '" target="_blank">' + pdbId + '</a>' +
+          (pdbIds.length > 1
+            ? ' · +' + (pdbIds.length - 1) + ' more' : '') +
+          ' · from ' + acc);
         return true;
       });
-    }).catch(function () {
-      return fetchAlphaFold(acc).then(function (pdb) {
-        renderModel(pdb, container,
+    }).catch(function (e) {
+      console.log("[Structure] PDB failed:", e.message, "→ AlphaFold");
+      return fetchAlphaFold(acc).then(function (pdbText) {
+        renderModel(pdbText, 'pdb', container,
           '🧬 <strong>Predicted structure</strong> · ' +
           '<a href="https://alphafold.ebi.ac.uk/entry/' + acc +
-          '" target="_blank">AlphaFold DB</a> · showing ' + acc);
+          '" target="_blank">AlphaFold DB</a> · ' + acc);
         return true;
-      }).catch(function () { return false; });
+      }).catch(function (e2) {
+        console.log("[Structure] AlphaFold failed:", e2.message);
+        return false;
+      });
     });
   }
 
-  // ---- Pick a display protein from the search results ----
-  // Rules:
-  //   1. If only one protein → use it
-  //   2. Prefer proteins with the most features (most studied)
-  //   3. Try top 3, fall back gracefully
+  // ---------- Rank search results ----------
   function rankCandidates(proteins) {
-    // Only consider proteins that have a MINIMUM of features.
-    // Garbage-search results (e.g. random words) often return
-    // entries with 1-2 features and no PDB structure.
-    // Filter them out before ranking.
     var viable = proteins.filter(function (p) {
       var featCount = (p.features || []).length;
       var seqLen = (p.sequence && p.sequence.length) || 0;
       return featCount >= 3 || seqLen >= 100;
     });
-
-    // If nothing passes the filter, use the full set as fallback
     if (!viable.length) viable = proteins.slice();
 
     return viable.slice().sort(function (a, b) {
-      var aReviewed = a.entryType && a.entryType.indexOf("reviewed") >= 0 ? 1 : 0;
-      var bReviewed = b.entryType && b.entryType.indexOf("reviewed") >= 0 ? 1 : 0;
+      var aR = a.entryType && a.entryType.indexOf("reviewed") >= 0 ? 1 : 0;
+      var bR = b.entryType && b.entryType.indexOf("reviewed") >= 0 ? 1 : 0;
       var aLen = (a.sequence && a.sequence.length) || 0;
       var bLen = (b.sequence && b.sequence.length) || 0;
-      var aFeat = (a.features || []).length;
-      var bFeat = (b.features || []).length;
-      // weighted score
-      var aScore = aReviewed * 500 + aFeat * 10 + Math.min(aLen, 2000);
-      var bScore = bReviewed * 500 + bFeat * 10 + Math.min(bLen, 2000);
-      return bScore - aScore;
+      var aF = (a.features || []).length;
+      var bF = (b.features || []).length;
+      var aS = aR * 500 + aF * 10 + Math.min(aLen, 2000);
+      var bS = bR * 500 + bF * 10 + Math.min(bLen, 2000);
+      return bS - aS;
     });
   }
 
-  // ---- Main: render whatever protein has a structure ----
+  // ---------- Main entry for search result set ----------
   function renderFromSearch(proteins, container) {
     container.innerHTML =
       '<div class="mol-loading">Finding a representative structure…' +
       '<div class="loading-bar"></div>' +
       '<div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:8px">' +
-      'Trying up to 5 proteins from your search</div>' +
-      '</div>';
+      'Trying up to 5 proteins from your search</div></div>';
 
     var ranked = rankCandidates(proteins).slice(0, 5);
     var idx = 0;
 
     function tryNext() {
-      if (idx >= ranked.length) {
-        renderPlaceholder(proteins[0].primaryAccession, container);
-        return;
-      }
+      if (idx >= ranked.length) { renderPlaceholder(container); return; }
       var acc = ranked[idx].primaryAccession;
       idx++;
-      console.log("[Structure] Trying", acc);
-
+      console.log("[Structure] Trying " + acc);
       tryOne(acc, container).then(function (ok) {
         if (!ok) tryNext();
       }).catch(tryNext);
     }
-
     tryNext();
   }
 
-  // ---- Placeholder when nothing is available ----
-  function renderPlaceholder(acc, container) {
+  // ---------- Placeholder ----------
+  function renderPlaceholder(container) {
     container.innerHTML = '';
-
     var wrap = document.createElement('div');
     wrap.style.cssText =
       'width:100%;height:100%;display:flex;align-items:center;' +
-      'justify-content:center;position:relative;min-height:360px;';
+      'justify-content:center;position:relative;min-height:280px;';
 
     var ns = 'http://www.w3.org/2000/svg';
     var svg = document.createElementNS(ns, 'svg');
     svg.setAttribute('viewBox', '-100 -100 200 200');
     svg.style.cssText =
-      'width:200px;height:200px;' +
-      'animation:spin3d 6s linear infinite;' +
+      'width:180px;height:180px;animation:spin3d 6s linear infinite;' +
       'transform-style:preserve-3d;';
 
     var defs = document.createElementNS(ns, 'defs');
@@ -251,18 +221,6 @@
     });
 
     wrap.appendChild(svg);
-
-    var label = document.createElement('div');
-    label.style.cssText =
-      'position:absolute;bottom:12px;left:50%;transform:translateX(-50%);' +
-      'font-size:11px;color:rgba(255,255,255,0.55);text-align:center;' +
-      'letter-spacing:0.3px;max-width:90%;';
-    label.innerHTML =
-      'No experimental or predicted structure found for this search<br>' +
-      '<span style="font-size:10.5px;opacity:0.8">' +
-      'Try a specific protein like P04637 or P00533</span>';
-    wrap.appendChild(label);
-
     container.appendChild(wrap);
 
     if (!document.getElementById('spin3dKeyframe')) {
@@ -278,13 +236,10 @@
   }
 
   window.Structure = {
-    render: function (acc, container) {
-      // Compat: single accession call
-      var fake = [{ primaryAccession: acc, features: [], sequence: {} }];
-      renderFromSearch(fake, container);
-    },
     renderFromSearch: renderFromSearch,
-    findPDB: findPDB
+    getPDBIds: getPDBIds,
+    tryOne: tryOne,
+    render: function (acc, container) { tryOne(acc, container); }
   };
-  console.log('[Structure] ready v5 — smart pick, RCSB-first');
+  console.log('[Structure] ready v31');
 })();
