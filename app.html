@@ -4,384 +4,170 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Search — BioOrigin</title>
 <link rel="icon" href="assets/img/favicon.svg"/>
-<link rel="stylesheet" href="assets/css/design-system.css?v=35"/>
-<link rel="stylesheet" href="assets/css/pages.css?v=35"/>
+<link rel="stylesheet" href="assets/css/design-system.css?v=36"/>
+<link rel="stylesheet" href="assets/css/pages.css?v=36"/>
 <style>
-  /* ---------- Horizontal scroll wrapper — desktop layout frozen ---------- */
   .card-scroll{width:100%;padding-bottom:12px;}
   .collective-card{
-    /* min-width removed for mobile responsiveness */
-    border-radius:20px;
-    padding:24px 28px 30px;
+    border-radius:20px;padding:24px 28px 30px;
     background:rgba(255,255,255,0.04);
     border:1px solid rgba(255,255,255,0.22);
     backdrop-filter:blur(10px);
-    -webkit-backdrop-filter:blur(10px);
     box-shadow:inset 0 1px 0 rgba(255,255,255,0.25),
                0 12px 36px rgba(0,0,0,0.28);
   }
-  .collective-header{
-    display:flex;justify-content:space-between;align-items:flex-start;
-    gap:16px;flex-wrap:wrap;margin-bottom:18px;
-  }
+  .collective-header{display:flex;justify-content:space-between;
+    align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
   .collective-header h2{font-size:22px;letter-spacing:-0.3px;margin-bottom:6px}
   .collective-header .meta{font-size:12.5px;color:rgba(255,255,255,0.62)}
   .collective-actions{display:flex;gap:8px;flex-wrap:wrap}
 
-  .action-btn{
-    font-size:12px;padding:9px 16px;border-radius:10px;
-    background:rgba(255,255,255,0.10);
-    border:1px solid rgba(255,255,255,0.35);
-    color:#fff;cursor:pointer;font-weight:600;
-    transition:all 0.18s ease;font-family:inherit;
-    min-height:38px;touch-action:manipulation;
-  }
-  .action-btn:hover,.action-btn:active{
-    background:rgba(255,255,255,0.18);transform:translateY(-1px);
-  }
-  .action-btn.primary{
-    background:rgba(239,68,68,0.16);
-    border-color:rgba(239,68,68,0.55);color:#fecaca;
-  }
-  .action-btn.primary:hover,.action-btn.primary:active{
-    background:rgba(239,68,68,0.28);
-    box-shadow:0 4px 14px rgba(239,68,68,0.28);
-  }
+  .action-btn{font-size:12px;padding:9px 16px;border-radius:10px;
+    background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.35);
+    color:#fff;cursor:pointer;font-weight:600;transition:all 0.18s ease;
+    font-family:inherit;min-height:38px;touch-action:manipulation;}
+  .action-btn:hover,.action-btn:active{background:rgba(255,255,255,0.18);transform:translateY(-1px)}
+  .action-btn.primary{background:rgba(239,68,68,0.16);border-color:rgba(239,68,68,0.55);color:#fecaca}
+  .action-btn.primary:hover,.action-btn.primary:active{background:rgba(239,68,68,0.28);
+    box-shadow:0 4px 14px rgba(239,68,68,0.28)}
 
-  .summary-bar{
-    display:flex;gap:8px;flex-wrap:wrap;
-    padding:0 0 18px;
-    border-bottom:1px solid rgba(255,255,255,0.10);
-    margin-bottom:20px;
-  }
-  .summary-pill{
-    padding:5px 14px;border-radius:999px;font-size:12px;
-    font-weight:600;letter-spacing:0.2px;
-    border:1px solid currentColor;background:rgba(255,255,255,0.03);
-  }
+  .summary-bar{display:flex;gap:8px;flex-wrap:wrap;padding:0 0 18px;
+    border-bottom:1px solid rgba(255,255,255,0.10);margin-bottom:20px;}
+  .summary-pill{padding:5px 14px;border-radius:999px;font-size:12px;
+    font-weight:600;letter-spacing:0.2px;border:1px solid currentColor;
+    background:rgba(255,255,255,0.03);}
 
-  /* Tab strip */
-  .tab-strip{
-    display:flex;gap:6px;padding:6px;margin-bottom:18px;
+  .tab-strip{display:flex;gap:6px;padding:6px;margin-bottom:18px;
     border-radius:12px;background:rgba(255,255,255,0.05);
     border:1px solid rgba(255,255,255,0.12);
-    overflow-x:auto;scrollbar-width:none;
-  }
+    overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
   .tab-strip::-webkit-scrollbar{display:none}
-  .tab-btn{
-    flex-shrink:0;padding:10px 18px;border:none;border-radius:9px;
-    background:transparent;color:rgba(255,255,255,0.78);
-    font-size:13px;font-weight:600;font-family:inherit;
-    cursor:pointer;transition:all 0.18s ease;
-    min-height:40px;touch-action:manipulation;white-space:nowrap;
-  }
+  .tab-btn{flex-shrink:0;padding:10px 18px;border:none;border-radius:9px;
+    background:transparent;color:rgba(255,255,255,0.78);font-size:13px;
+    font-weight:600;font-family:inherit;cursor:pointer;
+    transition:all 0.18s ease;min-height:40px;touch-action:manipulation;
+    white-space:nowrap;}
   .tab-btn:hover{color:#fff;background:rgba(255,255,255,0.08)}
-  .tab-btn.active{
-    background:rgba(255,255,255,0.16);color:#fff;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,0.25);
-  }
+  .tab-btn.active{background:rgba(255,255,255,0.16);color:#fff;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.25);}
 
   .tab-panel{display:none;animation:fadeIn 0.25s ease}
   .tab-panel.active{display:block}
   @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-  /* ---------- CHARTS TAB: 4-chart grid + 3D side-by-side ---------- */
-  .charts-layout{
-    display:flex;
-    flex-direction:column;
-    gap:16px;
-  }
-  .charts-row{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:16px;
-  }
-  .chart-box{
-    padding:6px 8px 2px;border-radius:14px;
-    background:rgba(20,15,45,0.55);
-    border:1px solid rgba(255,255,255,0.16);
+  .charts-layout{display:flex;flex-direction:column;gap:16px}
+  .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .chart-box{padding:6px 8px 2px;border-radius:14px;
+    background:rgba(20,15,45,0.55);border:1px solid rgba(255,255,255,0.16);
     box-shadow:inset 0 1px 0 rgba(255,255,255,0.14);
-    height:340px;position:relative;overflow:hidden;
-  }
+    height:340px;position:relative;overflow:hidden;}
   .chart-box > div{width:100%;height:100%;touch-action:manipulation}
 
-  /* 3D panel — full width below the chart grid */
-  .view3d-box{
-    width:100%;
-    height:480px;
-    border-radius:14px;
+  .view3d-box{width:100%;height:420px;border-radius:14px;
     background:radial-gradient(circle at 50% 40%,
       rgba(99,102,241,0.16),rgba(20,15,45,0.55));
     border:1px solid rgba(255,255,255,0.16);
-    overflow:hidden;
-    position:relative;
+    overflow:hidden;position:relative;
     box-shadow:inset 0 1px 0 rgba(255,255,255,0.18);
-  }
-  .view3d-box .mol-canvas{width:100%;height:100%;border-radius:12px;overflow:hidden}
+    display:flex;flex-direction:column;}
+  .view3d-box .mol-canvas{width:100%;flex:1 1 auto;min-height:340px;
+    display:block;position:relative;}
+  .view3d-box canvas{width:100% !important;height:100% !important;display:block !important}
 
-  .view3d-title{
-    position:absolute;top:14px;left:16px;
-    font-size:11px;letter-spacing:0.8px;text-transform:uppercase;
+  .view3d-title{position:absolute;top:14px;left:16px;font-size:11px;
+    letter-spacing:0.8px;text-transform:uppercase;
     color:rgba(255,255,255,0.88);font-weight:700;
-    display:flex;align-items:center;gap:8px;
-    z-index:5;
-  }
-  .view3d-title::before{
-    content:"";display:inline-block;width:3px;height:13px;
-    border-radius:2px;
-    background:linear-gradient(180deg,#a78bfa,#ec4899);
-    box-shadow:0 0 8px rgba(236,72,153,0.5);
-  }
-  .view3d-source{
-    position:absolute;top:14px;right:16px;
-    font-size:10.5px;padding:5px 12px;border-radius:999px;
-    background:rgba(255,255,255,0.10);
-    border:1px solid rgba(255,255,255,0.28);
-    color:rgba(255,255,255,0.85);font-weight:600;
-    z-index:5;
-  }
-  .view3d-spin{
-    position:absolute;bottom:14px;right:170px;
-    font-size:11px;padding:7px 14px;
-    border-radius:999px;
-    background:rgba(255,255,255,0.14);
-    border:1px solid rgba(255,255,255,0.32);
-    color:#fff;cursor:pointer;font-weight:600;
-    font-family:inherit;z-index:5;
-    touch-action:manipulation;
-    transition:background 0.18s ease;
-  }
-  .view3d-spin:hover{background:rgba(255,255,255,0.24)}
-  .view3d-spin.paused{
-    background:rgba(34,197,94,0.22);
-    border-color:rgba(34,197,94,0.55);
-  }
+    display:flex;align-items:center;gap:8px;z-index:5;}
+  .view3d-title::before{content:"";display:inline-block;width:3px;height:13px;
+    border-radius:2px;background:linear-gradient(180deg,#a78bfa,#ec4899);
+    box-shadow:0 0 8px rgba(236,72,153,0.5);}
+  .view3d-source{position:absolute;top:14px;right:16px;font-size:10.5px;
+    padding:5px 12px;border-radius:999px;background:rgba(255,255,255,0.10);
+    border:1px solid rgba(255,255,255,0.28);color:rgba(255,255,255,0.85);
+    font-weight:600;z-index:5;}
 
-  .view3d-switch{
-    position:absolute;bottom:14px;right:16px;
-    font-size:11px;padding:7px 14px;
-    border-radius:999px;
-    background:rgba(255,255,255,0.14);
-    border:1px solid rgba(255,255,255,0.32);
-    color:#fff;cursor:pointer;font-weight:600;
-    font-family:inherit;z-index:5;
-    touch-action:manipulation;
-  }
-  .view3d-switch:hover{background:rgba(255,255,255,0.24)}
-  .mol-loading,.mol-empty{
-    font-size:12px;color:rgba(255,255,255,0.7);
-    padding:28px;text-align:center;font-style:italic;
-  }
-  .mol-meta{
-    font-size:11px;color:rgba(255,255,255,0.6);
-    margin-top:8px;text-align:center;
-  }
+  .view3d-controls{position:absolute;bottom:14px;right:16px;
+    display:flex;gap:8px;z-index:5;}
+  .view3d-btn{font-size:11px;padding:7px 14px;border-radius:999px;
+    background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.32);
+    color:#fff;cursor:pointer;font-weight:600;font-family:inherit;
+    touch-action:manipulation;transition:background 0.18s ease;}
+  .view3d-btn:hover{background:rgba(255,255,255,0.24)}
+  .view3d-btn.paused{background:rgba(34,197,94,0.22);border-color:rgba(34,197,94,0.55)}
+
+  .mol-loading,.mol-empty{font-size:12px;color:rgba(255,255,255,0.7);
+    padding:28px;text-align:center;font-style:italic;}
+  .mol-meta{font-size:11px;color:rgba(255,255,255,0.6);
+    margin-top:8px;text-align:center;padding:0 12px 12px;}
   .mol-meta a{color:#fbcfe8;text-decoration:none;border-bottom:1px dotted}
 
-  .mol-loading,.mol-empty{
-    font-size:12px;color:rgba(255,255,255,0.7);
-    padding:28px;text-align:center;font-style:italic;
-  }
-  .mol-meta{
-    font-size:11px;color:rgba(255,255,255,0.6);
-    margin-top:8px;text-align:center;
-  }
-  .mol-meta a{color:#fbcfe8;text-decoration:none;border-bottom:1px dotted}
-
-  /* Protein list */
   .protein-list{display:grid;gap:10px}
-  .protein-item{
-    padding:16px 18px;border-radius:12px;
-    background:rgba(255,255,255,0.035);
-    border:1px solid rgba(255,255,255,0.14);
-    display:flex;justify-content:space-between;align-items:center;
-    gap:14px;text-decoration:none;color:inherit;
-    transition:background 0.18s ease,border-color 0.18s ease;
-    cursor:pointer;min-height:68px;
-  }
-  .protein-item:hover,.protein-item:active{
-    background:rgba(255,255,255,0.07);
-    border-color:rgba(255,255,255,0.32);
-  }
+  .protein-item{padding:16px 18px;border-radius:12px;
+    background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.14);
+    display:flex;justify-content:space-between;align-items:center;gap:14px;
+    text-decoration:none;color:inherit;transition:background 0.18s ease,
+    border-color 0.18s ease;cursor:pointer;min-height:68px;}
+  .protein-item:hover,.protein-item:active{background:rgba(255,255,255,0.07);
+    border-color:rgba(255,255,255,0.32);}
   .protein-item-info{flex:1;min-width:0}
-  .protein-item h4{
-    font-size:14.5px;margin-bottom:4px;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  }
-  .protein-item .meta{
-    font-size:12px;color:rgba(255,255,255,0.58);
-    font-family:ui-monospace,SFMono-Regular,monospace;
-  }
+  .protein-item h4{font-size:14.5px;margin-bottom:4px;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;}
+  .protein-item .meta{font-size:12px;color:rgba(255,255,255,0.58);
+    font-family:ui-monospace,SFMono-Regular,monospace;}
   .tier-pills{display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;
-              justify-content:flex-end;max-width:200px}
-  .tier-pill{
-    font-size:10px;padding:2px 8px;border-radius:999px;
-    font-weight:700;letter-spacing:0.3px;
-    border:1px solid currentColor;background:rgba(255,255,255,0.03);
-  }
+    justify-content:flex-end;max-width:200px;}
+  .tier-pill{font-size:10px;padding:2px 8px;border-radius:999px;
+    font-weight:700;letter-spacing:0.3px;border:1px solid currentColor;
+    background:rgba(255,255,255,0.03);}
 
-  /* Tree */
-  .tree-scroll{
-    overflow-x:auto;overflow-y:hidden;
-    -webkit-overflow-scrolling:touch;
-    touch-action:pan-x pan-y;padding-bottom:10px;
-    border-radius:12px;background:rgba(255,255,255,0.02);
-    border:1px solid rgba(255,255,255,0.12);
-  }
-  .tree-loading,.tree-empty{
-    font-size:13px;color:rgba(255,255,255,0.6);
-    font-style:italic;padding:26px;text-align:center;
-  }
+  .tree-scroll{overflow-x:auto;overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;
+    padding-bottom:10px;border-radius:12px;background:rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,0.12);}
+  .tree-loading,.tree-empty{font-size:13px;color:rgba(255,255,255,0.6);
+    font-style:italic;padding:26px;text-align:center;}
 
-  /* Impact */
-  .impact-block{
-    padding:14px;border-radius:12px;margin-bottom:12px;
-    background:rgba(239,68,68,0.08);
-    border:1px solid rgba(239,68,68,0.4);
-    border-left:3px solid #ef4444;
-  }
+  .impact-block{padding:14px;border-radius:12px;margin-bottom:12px;
+    background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.4);
+    border-left:3px solid #ef4444;}
   .impact-pmid{font-size:13px;font-weight:700;color:#fecaca;margin-bottom:6px}
-  .impact-pmid .tag{
-    background:#ef4444;color:#fff;padding:2px 8px;border-radius:5px;
-    font-size:10px;font-weight:800;margin-right:8px;
-  }
+  .impact-pmid .tag{background:#ef4444;color:#fff;padding:2px 8px;
+    border-radius:5px;font-size:10px;font-weight:800;margin-right:8px;}
   .impact-count{font-size:13px;color:#fff;margin:8px 0}
   .impact-count strong{color:#fecaca;font-size:16px}
-  .impact-protein{
-    display:flex;gap:10px;align-items:baseline;font-size:12px;
-    padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.06);
-  }
-  .impact-protein a{
-    color:#fbcfe8;text-decoration:none;font-weight:700;
-    font-family:ui-monospace,monospace;min-width:72px;
-  }
-  .impact-protein small{color:rgba(255,255,255,0.5);
-                        font-style:italic;margin-left:auto}
+  .impact-protein{display:flex;gap:10px;align-items:baseline;font-size:12px;
+    padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.06);}
+  .impact-protein a{color:#fbcfe8;text-decoration:none;font-weight:700;
+    font-family:ui-monospace,monospace;min-width:72px;}
+  .impact-protein small{color:rgba(255,255,255,0.5);font-style:italic;
+    margin-left:auto;}
   .impact-empty{font-size:13px;color:rgba(255,255,255,0.6);
-                font-style:italic;padding:12px 0}
+    font-style:italic;padding:12px 0}
 
-  .loading-bar{
-    height:3px;
+  .loading-bar{height:3px;
     background:linear-gradient(90deg,transparent,rgba(255,255,255,0.85),transparent);
-    background-size:200% 100%;
-    animation:slide 1.2s linear infinite;
-    border-radius:2px;margin:14px 0;
-  }
+    background-size:200% 100%;animation:slide 1.2s linear infinite;
+    border-radius:2px;margin:14px 0;}
   @keyframes slide{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-  @media (max-width:600px){
-    .collective-card{padding:18px 18px 24px;border-radius:16px}
-    .collective-header h2{font-size:19px}
-  }
-
-
-  /* ============================================================
-     RESPONSIVE — chart grid + 3D stack vertically on phones
-     ============================================================ */
-  @media (max-width: 900px){
-    .charts-row{
-      grid-template-columns:1fr !important;
-    }
-    .view3d-box{
-      height:360px;
-    }
-    .chart-box{
-      height:300px;
-    }
-  }
-
-  @media (max-width: 600px){
-    .collective-card{
-      padding:18px 16px 22px;
-      border-radius:16px;
-    }
-    .collective-header h2{font-size:17px}
-    .collective-header .meta{font-size:11px}
-    .summary-pill{font-size:11px;padding:4px 10px}
-    .tab-btn{font-size:12px;padding:9px 14px}
-    .chart-box{height:280px;padding:4px 4px 0}
-    .view3d-box{height:320px}
-    .mol-meta{font-size:10.5px}
-    .view3d-title{font-size:10px;top:10px;left:12px}
-    .view3d-source{font-size:9.5px;top:10px;right:12px;padding:4px 9px}
-    .view3d-spin{
-    position:absolute;bottom:14px;right:170px;
-    font-size:11px;padding:7px 14px;
-    border-radius:999px;
-    background:rgba(255,255,255,0.14);
-    border:1px solid rgba(255,255,255,0.32);
-    color:#fff;cursor:pointer;font-weight:600;
-    font-family:inherit;z-index:5;
-    touch-action:manipulation;
-    transition:background 0.18s ease;
-  }
-  .view3d-spin:hover{background:rgba(255,255,255,0.24)}
-  .view3d-spin.paused{
-    background:rgba(34,197,94,0.22);
-    border-color:rgba(34,197,94,0.55);
-  }
-
-  .view3d-switch{font-size:10.5px;padding:6px 12px;bottom:10px;right:12px}
-    .protein-item{padding:14px 14px;min-height:64px}
-    .protein-item h4{font-size:13.5px}
-    .protein-item .meta{font-size:11px}
-    .tier-pill{font-size:9.5px}
-    .action-btn{font-size:11px;padding:8px 12px}
-  }
-
-  @media (max-width: 400px){
-    .chart-box{height:250px}
-    .view3d-box{height:280px}
-    .collective-header h2{font-size:16px}
-  }
-
-
-  @media (max-width: 900px){
+  @media (max-width:900px){
     .charts-row{grid-template-columns:1fr !important}
     .chart-box{height:340px}
     .view3d-box{height:auto;min-height:420px}
   }
-  @media (max-width: 600px){
+  @media (max-width:600px){
     .collective-card{padding:18px 16px 22px;border-radius:16px}
-    .view3d-spin{bottom:56px;right:14px;font-size:10.5px;padding:6px 12px}
-    .view3d-switch{bottom:14px;right:14px;font-size:10.5px;padding:6px 12px}
     .collective-header h2{font-size:17px}
     .chart-box{height:320px;padding:8px 8px 4px}
-    .view3d-box{height:auto;min-height:380px}
+    .view3d-box{min-height:380px}
     .view3d-title{font-size:10px}
     .view3d-source{font-size:9.5px}
+    .view3d-btn{font-size:10.5px;padding:6px 12px}
   }
-  @media (max-width: 400px){
+  @media (max-width:400px){
     .chart-box{height:300px}
     .view3d-box{min-height:340px}
   }
-
-  /* Ensure 3D canvas fills its parent */
-  .view3d-box{
-    display:flex;
-    flex-direction:column;
-    min-height:420px;
-    padding:0;
-    position:relative;
-  }
-  .view3d-box > #collective-3d,
-  .view3d-box > .mol-canvas{
-    flex:1 1 auto;
-    width:100%;
-    min-height:340px;
-  }
-  .view3d-box .mol-canvas{
-    width:100%;
-    height:auto;
-    min-height:340px;
-    display:block;
-  }
-  .view3d-box canvas{
-    width:100% !important;
-    height:100% !important;
-    display:block !important;
-  }
-
 </style>
 </head><body>
 
@@ -409,59 +195,40 @@
   </section>
 </main>
 
-<!-- Libraries -->
 <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
-<!-- Project scripts -->
-<script src="assets/js/config.js?v=35"></script>
-<script src="assets/js/bubbles.js?v=35"></script>
-<script src="assets/js/ui.js?v=35"></script>
-<script src="assets/js/api.js?v=35"></script>
-<script src="assets/js/evidence.js?v=35"></script>
-<script src="assets/js/retraction.js?v=35"></script>
-<script src="assets/js/impact.js?v=35"></script>
-<script src="assets/js/structure.js?v=35"></script>
-<script src="assets/js/collective.js?v=35"></script>
-<script src="assets/js/tree.js?v=35"></script>
-<script src="assets/js/pdf.js?v=35"></script>
+<script src="assets/js/config.js?v=36"></script>
+<script src="assets/js/bubbles.js?v=36"></script>
+<script src="assets/js/ui.js?v=36"></script>
+<script src="assets/js/api.js?v=36"></script>
+<script src="assets/js/evidence.js?v=36"></script>
+<script src="assets/js/retraction.js?v=36"></script>
+<script src="assets/js/impact.js?v=36"></script>
+<script src="assets/js/structure.js?v=36"></script>
+<script src="assets/js/collective.js?v=36"></script>
+<script src="assets/js/tree.js?v=36"></script>
+<script src="assets/js/pdf.js?v=36"></script>
 
 <script>
 (function () {
   "use strict";
-  console.log("[BioOrigin] app booting…");
+  console.log("[BioOrigin] booting v36");
 
-  var q   = document.getElementById("q");
-  var go  = document.getElementById("go");
+  var q = document.getElementById("q");
+  var go = document.getElementById("go");
   var out = document.getElementById("out");
   var currentProteinIndex = 0;
+  var latestProteins = [];
 
-  function ensureLibs() {
-    var missing = [];
-    if (!window.BioAPI)     missing.push("BioAPI");
-    if (!window.Evidence)   missing.push("Evidence");
-    if (!window.Retraction) missing.push("Retraction");
-    if (missing.length) {
-      console.error("[BioOrigin] missing:", missing);
-      out.innerHTML =
-        '<div class="glass-field result-card" style="display:block;min-width:0">' +
-        '<h4>Startup error</h4>' +
-        '<div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:8px">' +
-        'Missing: ' + missing.join(", ") +
-        '. Hard-refresh.</div></div>';
-      return false;
-    }
-    return true;
-  }
-
-  function looksLikeAccession(s) {
-    return /^[A-Z][A-Z0-9]{5,9}$/i.test(s) && /\d/.test(s);
-  }
   function esc(s) {
     return String(s == null ? "" : s)
       .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+  function looksLikeAccession(s) {
+    return /^[A-Z][A-Z0-9]{5,9}$/i.test(s) && /\d/.test(s);
   }
   function tally(features) {
     var t = { high:0, medium:0, low:0, very_low:0, unknown:0 };
@@ -470,6 +237,19 @@
       t[c.tier] = (t[c.tier] || 0) + 1;
     });
     return t;
+  }
+  function checkLibs() {
+    var miss = [];
+    if (!window.BioAPI) miss.push("BioAPI");
+    if (!window.Evidence) miss.push("Evidence");
+    if (!window.Retraction) miss.push("Retraction");
+    if (miss.length) {
+      out.innerHTML = '<div class="glass-field result-card" style="display:block;min-width:0">' +
+        '<h4>Startup error</h4><div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:8px">' +
+        'Missing: ' + miss.join(", ") + '. Hard-refresh the page.</div></div>';
+      return false;
+    }
+    return true;
   }
 
   function renderCollective(proteins, retractions) {
@@ -480,7 +260,6 @@
       totalFeatures += (p.features || []).length;
       Object.keys(t).forEach(function (k) { total[k] += t[k]; });
     });
-
     var colors = { high:"#22c55e", medium:"#eab308", low:"#f97316",
                    very_low:"#ef4444", unknown:"#9ca3af" };
     var pills = Object.keys(total).filter(function (k) { return total[k] > 0; })
@@ -488,107 +267,98 @@
         return '<span class="summary-pill" style="color:' + colors[tier] + '">' +
                total[tier] + ' ' + tier + '</span>';
       }).join("");
-
     var queryStr = q.value.trim() || "results";
 
     var html =
-      '<div class="card-scroll">' +
-        '<div class="collective-card">' +
-          '<div class="collective-header">' +
-            '<div>' +
-              '<h2>📊 ' + esc(queryStr) + ' — ' + proteins.length +
-                ' protein' + (proteins.length !== 1 ? 's' : '') + '</h2>' +
-              '<div class="meta">' + totalFeatures + ' annotated features · ' +
-                'live from UniProt · ' + new Date().toLocaleTimeString() +
-              '</div>' +
-            '</div>' +
-            '<div class="collective-actions">' +
-              '<button class="action-btn primary" id="pdf-collective">📄 Export PDF</button>' +
-              '<button class="action-btn" id="json-collective">⬇ JSON</button>' +
-            '</div>' +
+      '<div class="card-scroll"><div class="collective-card">' +
+        '<div class="collective-header">' +
+          '<div>' +
+            '<h2>📊 ' + esc(queryStr) + ' — ' + proteins.length +
+              ' protein' + (proteins.length !== 1 ? 's' : '') + '</h2>' +
+            '<div class="meta">' + totalFeatures + ' annotated features · ' +
+              'live from UniProt · ' + new Date().toLocaleTimeString() + '</div>' +
           '</div>' +
-          (pills ? '<div class="summary-bar">' + pills + '</div>' : '') +
-
-          '<div class="tab-strip" id="tabstrip">' +
-            '<button class="tab-btn active" data-tab="charts">📈 Charts + 3D</button>' +
-            '<button class="tab-btn" data-tab="proteins">🧪 Proteins</button>' +
-            '<button class="tab-btn" data-tab="tree">🌳 Tree</button>' +
-            '<button class="tab-btn" data-tab="impact">💥 Impact</button>' +
-          '</div>' +
-
-          '<div class="tab-panel active" id="tab-charts">' +
-            '<div class="charts-layout">' +
-              '<div class="charts-row">' +
-                '<div class="chart-box"><div id="collective-donut"></div></div>' +
-                '<div class="chart-box"><div id="collective-perprot"></div></div>' +
-              '</div>' +
-              '<div class="charts-row">' +
-                '<div class="chart-box"><div id="collective-types"></div></div>' +
-                '<div class="chart-box"><div id="collective-positions"></div></div>' +
-              '</div>' +
-              '<div class="view3d-box">' +
-                '<div class="view3d-title">🧬 Representative 3D Structure</div>' +
-                '<div class="view3d-source" id="view3d-source">Loading…</div>' +
-                '<button class="view3d-spin" id="spin-toggle" title="Toggle rotation">⏸ Pause</button>
-                <button class="view3d-switch" id="switch3d">Next structure →</button>' +
-                '<div id="collective-3d"></div>' +
-              '</div>' +
-            '</div>' +
-          '</div>' +
-
-          '<div class="tab-panel" id="tab-proteins">' +
-            '<div class="protein-list">' +
-              proteins.map(function (p) {
-                var acc = p.primaryAccession;
-                var name = (p.proteinDescription &&
-                            p.proteinDescription.recommendedName &&
-                            p.proteinDescription.recommendedName.fullName &&
-                            p.proteinDescription.recommendedName.fullName.value) ||
-                           p.uniProtkbId || "Unknown";
-                var org = (p.organism && p.organism.scientificName) || "";
-                var t = tally(p.features);
-                var tierPills = Object.keys(t).filter(function (k) { return t[k] > 0; })
-                  .map(function (tier) {
-                    return '<span class="tier-pill" style="color:' + colors[tier] + '">' +
-                           t[tier] + ' ' + tier + '</span>';
-                  }).join("");
-                return '<a class="protein-item" href="?q=' + esc(acc) + '">' +
-                  '<div class="protein-item-info">' +
-                    '<h4>' + esc(name) + '</h4>' +
-                    '<div class="meta">' + esc(acc) + ' · ' + esc(org) + '</div>' +
-                  '</div>' +
-                  '<div class="tier-pills">' + tierPills + '</div>' +
-                '</a>';
-              }).join("") +
-            '</div>' +
-          '</div>' +
-
-          '<div class="tab-panel" id="tab-tree">' +
-            '<div id="collective-tree"></div>' +
-          '</div>' +
-
-          '<div class="tab-panel" id="tab-impact">' +
-            '<div id="collective-impact"></div>' +
+          '<div class="collective-actions">' +
+            '<button class="action-btn primary" id="pdf-collective">📄 Export PDF</button>' +
+            '<button class="action-btn" id="json-collective">⬇ JSON</button>' +
           '</div>' +
         '</div>' +
-      '</div>';
-
+        (pills ? '<div class="summary-bar">' + pills + '</div>' : '') +
+        '<div class="tab-strip" id="tabstrip">' +
+          '<button class="tab-btn active" data-tab="charts">📈 Charts + 3D</button>' +
+          '<button class="tab-btn" data-tab="proteins">🧪 Proteins</button>' +
+          '<button class="tab-btn" data-tab="tree">🌳 Tree</button>' +
+          '<button class="tab-btn" data-tab="impact">💥 Impact</button>' +
+        '</div>' +
+        '<div class="tab-panel active" id="tab-charts">' +
+          '<div class="charts-layout">' +
+            '<div class="charts-row">' +
+              '<div class="chart-box"><div id="collective-donut"></div></div>' +
+              '<div class="chart-box"><div id="collective-perprot"></div></div>' +
+            '</div>' +
+            '<div class="charts-row">' +
+              '<div class="chart-box"><div id="collective-types"></div></div>' +
+              '<div class="chart-box"><div id="collective-positions"></div></div>' +
+            '</div>' +
+            '<div class="view3d-box">' +
+              '<div class="view3d-title">🧬 Representative 3D Structure</div>' +
+              '<div class="view3d-source" id="view3d-source">Loading…</div>' +
+              '<div id="collective-3d"></div>' +
+              '<div class="view3d-controls">' +
+                '<button class="view3d-btn" id="spin-toggle">⏸ Pause</button>' +
+                '<button class="view3d-btn" id="switch3d">Next structure →</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="tab-panel" id="tab-proteins">' +
+          '<div class="protein-list">' +
+            proteins.map(function (p) {
+              var acc = p.primaryAccession;
+              var name = (p.proteinDescription &&
+                          p.proteinDescription.recommendedName &&
+                          p.proteinDescription.recommendedName.fullName &&
+                          p.proteinDescription.recommendedName.fullName.value) ||
+                         p.uniProtkbId || "Unknown";
+              var org = (p.organism && p.organism.scientificName) || "";
+              var t = tally(p.features);
+              var tierPills = Object.keys(t).filter(function (k) { return t[k] > 0; })
+                .map(function (tier) {
+                  return '<span class="tier-pill" style="color:' + colors[tier] + '">' +
+                         t[tier] + ' ' + tier + '</span>';
+                }).join("");
+              return '<a class="protein-item" href="?q=' + esc(acc) + '">' +
+                '<div class="protein-item-info">' +
+                  '<h4>' + esc(name) + '</h4>' +
+                  '<div class="meta">' + esc(acc) + ' · ' + esc(org) + '</div>' +
+                '</div>' +
+                '<div class="tier-pills">' + tierPills + '</div>' +
+              '</a>';
+            }).join("") +
+          '</div>' +
+        '</div>' +
+        '<div class="tab-panel" id="tab-tree">' +
+          '<div id="collective-tree"></div>' +
+        '</div>' +
+        '<div class="tab-panel" id="tab-impact">' +
+          '<div id="collective-impact"></div>' +
+        '</div>' +
+      '</div></div>';
     return html;
   }
 
   function load3D(proteins, index) {
-    var box3d = document.getElementById('collective-3d');
-    if (!box3d || !proteins.length) return;
-    currentProteinIndex = index || 0;
+    var box = document.getElementById('collective-3d');
+    if (!box || !proteins.length) return;
+    currentProteinIndex = (index || 0) % proteins.length;
 
     var sourceEl = document.getElementById('view3d-source');
-    if (sourceEl) sourceEl.textContent = 'Loading…';
-
+    if (sourceEl) {
+      sourceEl.textContent = proteins.length + ' candidate' +
+        (proteins.length !== 1 ? 's' : '');
+    }
     if (window.Structure) {
-      window.Structure.renderFromSearch(proteins, box3d);
-      setTimeout(function () {
-        if (sourceEl) sourceEl.textContent = proteins.length + ' candidates';
-      }, 500);
+      window.Structure.renderFromSearch(proteins, box);
     }
   }
 
@@ -600,78 +370,54 @@
       var btn = e.target.closest('.tab-btn');
       if (!btn) return;
       var target = btn.getAttribute('data-tab');
-
       strip.querySelectorAll('.tab-btn').forEach(function (b) {
         b.classList.toggle('active', b === btn);
       });
       document.querySelectorAll('.tab-panel').forEach(function (p) {
         p.classList.toggle('active', p.id === 'tab-' + target);
       });
-
       if (target === 'tree') {
-        var treeBox = document.getElementById('collective-tree');
-        if (treeBox && !treeBox.dataset.built && proteins.length) {
-          treeBox.dataset.built = "1";
-          if (window.Provenance) {
-            window.Provenance.renderForAccession(
-              proteins[0].primaryAccession, treeBox, 2);
-          }
+        var box = document.getElementById('collective-tree');
+        if (box && !box.dataset.built && proteins.length && window.Provenance) {
+          box.dataset.built = "1";
+          window.Provenance.renderForAccession(
+            proteins[0].primaryAccession, box, 2);
         }
       }
-
       if (target === 'impact') {
-        var impactBox = document.getElementById('collective-impact');
-        if (impactBox && !impactBox.dataset.built && proteins.length) {
-          impactBox.dataset.built = "1";
-          if (window.Impact) {
-            window.Impact.analyze(proteins[0], retractions, impactBox);
-          }
+        var imp = document.getElementById('collective-impact');
+        if (imp && !imp.dataset.built && proteins.length && window.Impact) {
+          imp.dataset.built = "1";
+          window.Impact.analyze(proteins[0], retractions, imp);
         }
       }
-
-      // Pause heavy animations when 3D is on screen
-      if (target === 'charts') {
-        // Charts tab contains the 3D viewer — stop bubbles to free GPU
-        if (window.Bubbles) window.Bubbles.stop();
-      } else {
-        // Other tabs — free the 3D viewer's spin loop, restart bubbles
-        if (window.Structure && window.Structure.stopActive) {
-          window.Structure.stopActive();
-        }
-        if (window.Bubbles) window.Bubbles.start();
-      }
-
       if (navigator.vibrate) navigator.vibrate(8);
     });
 
-    // Render charts on the Charts tab immediately
-    if (window.Collective) {
-      setTimeout(function () { window.Collective.renderAll(proteins); }, 60);
-    }
-
-    // Load the 3D viewer immediately on the charts tab
+    // Charts + 3D
     setTimeout(function () {
       if (window.Bubbles) window.Bubbles.stop();
+      if (window.Collective) window.Collective.renderAll(proteins);
       load3D(proteins, 0);
-    }, 120);
+    }, 100);
 
-    // Wire the "Next protein" switch button
-    var btn = document.getElementById('switch3d');
-    if (btn) {
-      btn.addEventListener('click', function () {
+    // Next structure button
+    var nextBtn = document.getElementById('switch3d');
+    if (nextBtn) {
+      nextBtn.addEventListener('click', function () {
         load3D(proteins, currentProteinIndex + 1);
         if (navigator.vibrate) navigator.vibrate(8);
       });
     }
 
-    // Wire the rotation toggle button
+    // Spin toggle button
     var spinBtn = document.getElementById('spin-toggle');
     if (spinBtn) {
       spinBtn.addEventListener('click', function () {
         if (!window.Structure) return;
-        var nowSpinning = window.Structure.toggleSpin();
-        spinBtn.textContent = nowSpinning ? '⏸ Pause' : '▶ Spin';
-        spinBtn.classList.toggle('paused', !nowSpinning);
+        var spinning = window.Structure.toggleSpin();
+        spinBtn.textContent = spinning ? '⏸ Pause' : '▶ Spin';
+        spinBtn.classList.toggle('paused', !spinning);
         if (navigator.vibrate) navigator.vibrate(6);
       });
     }
@@ -681,27 +427,22 @@
     var pdfBtn = document.getElementById('pdf-collective');
     if (pdfBtn) {
       pdfBtn.addEventListener('click', function () {
-        var btn = this;
-        btn.disabled = true;
-        btn.textContent = "Rendering…";
+        var b = this; b.disabled = true; b.textContent = "Rendering…";
         setTimeout(function () {
           try {
             var merged = Object.assign({}, proteins[0], {
               features: proteins.reduce(function (acc, p) {
                 return acc.concat((p.features || []).map(function (f) {
-                  f._source = p.primaryAccession;
-                  return f;
+                  f._source = p.primaryAccession; return f;
                 }));
               }, [])
             });
             window.PDFExport.exportPDF(merged, retractions, null);
           } catch (e) { alert("PDF failed: " + e.message); }
-          btn.disabled = false;
-          btn.textContent = "📄 Export PDF";
+          b.disabled = false; b.textContent = "📄 Export PDF";
         }, 50);
       });
     }
-
     var jsonBtn = document.getElementById('json-collective');
     if (jsonBtn) {
       jsonBtn.addEventListener('click', function () {
@@ -711,10 +452,6 @@
           proteins: proteins.map(function (p) {
             return {
               accession: p.primaryAccession,
-              name: (p.proteinDescription && p.proteinDescription.recommendedName &&
-                     p.proteinDescription.recommendedName.fullName &&
-                     p.proteinDescription.recommendedName.fullName.value) || "",
-              organism: (p.organism && p.organism.scientificName) || "",
               feature_count: (p.features || []).length,
               tier_tally: tally(p.features)
             };
@@ -726,8 +463,7 @@
         var a = document.createElement('a');
         a.href = url;
         a.download = 'bioorigin-' +
-                     (q.value.trim() || "search").replace(/[^A-Za-z0-9]/g, "_") +
-                     '.json';
+          (q.value.trim() || "search").replace(/[^A-Za-z0-9]/g, "_") + '.json';
         a.click();
         URL.revokeObjectURL(url);
       });
@@ -745,48 +481,39 @@
   }
 
   function run() {
-    if (!ensureLibs()) return;
+    if (!checkLibs()) return;
     var t = q.value.trim();
     if (!t) { q.focus(); return; }
 
     console.log("[BioOrigin] search:", t);
-
-    out.innerHTML =
-      '<div class="glass-field result-card" style="display:block;min-width:0">' +
+    out.innerHTML = '<div class="glass-field result-card" style="display:block;min-width:0">' +
       '<h4>Searching UniProt…</h4><div class="loading-bar"></div></div>';
 
-    var p;
-    if (looksLikeAccession(t)) {
-      p = window.BioAPI.fetchProtein(t).then(function (r) { return [r]; });
-    } else {
-      p = window.BioAPI.searchProteins(t, 10);
-    }
+    var p = looksLikeAccession(t)
+      ? window.BioAPI.fetchProtein(t).then(function (r) { return [r]; })
+      : window.BioAPI.searchProteins(t, 10);
 
     p.then(function (results) {
       if (!results || !results.length) {
-        out.innerHTML =
-          '<div class="glass-field result-card" style="display:block;min-width:0">' +
+        out.innerHTML = '<div class="glass-field result-card" style="display:block;min-width:0">' +
           '<h4>No results for "' + esc(t) + '"</h4></div>';
         return;
       }
       console.log("[BioOrigin] got", results.length, "proteins");
+      latestProteins = results;
 
-      out.innerHTML =
-        '<div class="glass-field result-card" style="display:block;min-width:0">' +
+      out.innerHTML = '<div class="glass-field result-card" style="display:block;min-width:0">' +
         '<h4>Checking sources…</h4><div class="loading-bar"></div></div>';
 
       var pmids = collectAllPmids(results);
       return window.Retraction.checkPmids(pmids).then(function (retractions) {
-        console.log("[BioOrigin] rendered");
-        if (window.Bubbles) window.Bubbles.stop();
         out.innerHTML = renderCollective(results, retractions);
         setupTabs(results, retractions);
         setupActions(results, retractions);
       });
     }).catch(function (e) {
-      console.error("[BioOrigin] error:", e);
-      out.innerHTML =
-        '<div class="glass-field result-card" style="display:block;min-width:0">' +
+      console.error(e);
+      out.innerHTML = '<div class="glass-field result-card" style="display:block;min-width:0">' +
         '<h4>Error: ' + esc(e.message) + '</h4></div>';
     });
   }
@@ -802,7 +529,7 @@
     setTimeout(run, 150);
   }
 
-  console.log("[BioOrigin] ready v27");
+  console.log("[BioOrigin] ready v36");
 })();
 </script>
 </body></html>
