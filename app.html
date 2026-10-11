@@ -3,8 +3,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Search — Provenance Tracker</title>
-<link rel="stylesheet" href="assets/css/design-system.css?v=10"/>
-<link rel="stylesheet" href="assets/css/pages.css?v=10"/>
+<link rel="stylesheet" href="assets/css/design-system.css?v=12"/>
+<link rel="stylesheet" href="assets/css/pages.css?v=12"/>
 <style>
   .evidence-badge{display:inline-block;padding:3px 10px;border-radius:999px;
     font-size:11px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;
@@ -38,7 +38,7 @@
     animation:slide 1.2s linear infinite;border-radius:2px;margin:10px 0}
   @keyframes slide{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-  /* ---------- Provenance tree ---------- */
+  /* Provenance hierarchy */
   .prov-section{margin-top:16px;padding-top:14px;
     border-top:1px solid rgba(255,255,255,0.15)}
   .prov-header{display:flex;align-items:center;justify-content:space-between;
@@ -49,23 +49,24 @@
     background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);
     color:#fff;cursor:pointer;font-weight:600}
   .prov-btn:hover{background:rgba(255,255,255,0.25)}
-  .prov-tree{margin-top:10px;font-size:13px;line-height:1.7}
-  .prov-node{padding:2px 0}
-  .prov-node.root > .prov-row{font-weight:700;color:#fff}
+  .prov-summary{font-size:12px;color:rgba(255,255,255,0.7);
+    margin:6px 0 10px;font-style:italic}
+  .prov-tree{margin-top:6px;font-size:13px;line-height:1.5}
+  .prov-node{padding:1px 0}
   .prov-row{display:flex;align-items:center;gap:10px;padding:4px 6px;
     border-radius:8px;transition:background 0.15s}
-  .prov-row:hover{background:rgba(255,255,255,0.06)}
-  .prov-arrow{color:rgba(255,255,255,0.55);font-size:12px}
-  .prov-acc{color:#fbcfe8;text-decoration:none;font-weight:700;
-    font-family:ui-monospace,monospace}
-  .prov-acc:hover{text-decoration:underline}
-  .prov-name{color:rgba(255,255,255,0.9)}
+  .prov-row:hover{background:rgba(255,255,255,0.05)}
+  .prov-arrow{color:rgba(255,255,255,0.55);font-size:12px;width:14px}
+  .prov-name{color:rgba(255,255,255,0.92)}
   .prov-org{color:rgba(255,255,255,0.55);font-style:italic;margin-left:auto;
     font-size:11px}
+  .prov-count{display:inline-block;padding:1px 8px;border-radius:999px;
+    font-size:11px;font-weight:700;margin-left:6px;border:1px solid}
+  .prov-example{opacity:0.75;font-size:12px}
   .prov-empty{color:rgba(255,255,255,0.6);font-size:12px;padding:10px 0;
     font-style:italic}
   .prov-loading{color:rgba(255,255,255,0.75);font-size:12px;padding:10px 0}
-  .prov-children{border-left:1px dashed rgba(255,255,255,0.25);
+  .prov-children{border-left:1px dashed rgba(255,255,255,0.22);
     margin-left:14px;padding-left:6px}
 </style>
 </head><body>
@@ -80,7 +81,7 @@
   <section style="padding:32px 40px 12px;">
     <h2 style="font-size:24px;margin-bottom:8px;">Search Proteins</h2>
     <p>Enter a UniProt accession (e.g. <code>P12345</code>) or a keyword.
-       Retracted sources and provenance chains are shown automatically.</p>
+       Retracted sources and evidence hierarchy are shown automatically.</p>
   </section>
 
   <div class="search-bar">
@@ -96,13 +97,13 @@
   </section>
 </main>
 
-<script src="assets/js/config.js?v=10"></script>
-<script src="assets/js/bubbles.js?v=10"></script>
-<script src="assets/js/ui.js?v=10"></script>
-<script src="assets/js/api.js?v=10"></script>
-<script src="assets/js/evidence.js?v=10"></script>
-<script src="assets/js/retraction.js?v=10"></script>
-<script src="assets/js/provenance.js?v=10"></script>
+<script src="assets/js/config.js?v=12"></script>
+<script src="assets/js/bubbles.js?v=12"></script>
+<script src="assets/js/ui.js?v=12"></script>
+<script src="assets/js/api.js?v=12"></script>
+<script src="assets/js/evidence.js?v=12"></script>
+<script src="assets/js/retraction.js?v=12"></script>
+<script src="assets/js/provenance.js?v=12"></script>
 
 <script>
 (function () {
@@ -193,7 +194,6 @@
       ? features.map(function (f) { return renderFeature(f, retractions); }).join("")
       : '<div class="feature-meta">No annotated features with evidence.</div>';
 
-    // provenance section (hidden until user clicks)
     var provId = "prov-" + acc.replace(/[^A-Za-z0-9]/g, "_");
 
     return (
@@ -207,9 +207,8 @@
         '<div>' + rows + '</div>' +
         '<div class="prov-section">' +
           '<div class="prov-header">' +
-            '<h5>🔗 Provenance Chain</h5>' +
-            '<button class="prov-btn" data-acc="' + acc +
-              '" data-target="' + provId + '">Build tree</button>' +
+            '<h5>🌳 Evidence Hierarchy</h5>' +
+            '<button class="prov-btn" data-target="' + provId + '">Build</button>' +
           '</div>' +
           '<div id="' + provId + '" class="prov-tree"></div>' +
         '</div>' +
@@ -227,20 +226,30 @@
     return Object.keys(set);
   }
 
-  // Handle "Build tree" button clicks
+  // Store latest results so the Build button can re-render trees
+  var latestResults = [];
+
   document.addEventListener("click", function (e) {
     var btn = e.target.closest(".prov-btn");
     if (!btn) return;
-    var acc = btn.getAttribute("data-acc");
     var targetId = btn.getAttribute("data-target");
     var box = document.getElementById(targetId);
-    if (!acc || !box) return;
+    if (!box) return;
+    // find which protein this belongs to by accession embedded in id
+    var acc = targetId.replace("prov-", "").replace(/_/g, "");
+    // simpler: find the result whose sanitized accession matches
+    var found = latestResults.find(function (r) {
+      return (r.primaryAccession || "").replace(/[^A-Za-z0-9]/g, "_") ===
+             targetId.replace("prov-", "");
+    });
+    if (!found) return;
     btn.disabled = true;
     btn.textContent = "Building…";
-    window.Provenance.renderForAccession(acc, box, 2).then(function () {
+    setTimeout(function () {
+      window.Provenance.renderForData(found, box);
       btn.textContent = "Rebuild";
       btn.disabled = false;
-    });
+    }, 50);
   });
 
   function run() {
@@ -261,6 +270,7 @@
         out.innerHTML = '<div class="glass-field result-card"><h4>No results</h4></div>';
         return;
       }
+      latestResults = results;
       out.innerHTML = '<div class="glass-field result-card"><h4>Checking sources…</h4>' +
                       '<div class="loading-bar"></div></div>';
       var pmids = collectAllPmids(results);
@@ -277,7 +287,6 @@
     });
   }
 
-  // Support ?q=ACCESSION deep-link
   var params = new URLSearchParams(window.location.search);
   if (params.get("q")) {
     q.value = params.get("q");
@@ -286,7 +295,7 @@
 
   go.addEventListener("click", run);
   q.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
-  console.log("[app] ready with provenance tree");
+  console.log("[app] ready with evidence hierarchy");
 })();
 </script>
 </body></html>

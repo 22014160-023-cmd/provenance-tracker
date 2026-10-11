@@ -1,126 +1,156 @@
-// provenance.js — build and render the annotation ancestry tree
+// provenance.js v3 — evidence hierarchy tree
 (function () {
-  var CFG = window.CONFIG || {};
-  var UNIPROT = CFG.UNIPROT_BASE || "https://rest.uniprot.org/uniprotkb";
-  var cache = {};   // accession → parsed protein
+  var TIERS = ["high", "medium", "low", "very_low", "unknown"];
+  var COLORS = { high: "#22c55e", medium: "#eab308", low: "#f97316",
+                 very_low: "#ef4444", unknown: "#9ca3af" };
 
-  // ---------- 1) Fetch a protein (memoized) ----------
-  function getProtein(acc) {
-    if (cache[acc]) return Promise.resolve(cache[acc]);
-    var url = UNIPROT + "/" + encodeURIComponent(acc) + ".json";
-    return fetch(url, { headers: { Accept: "application/json" } })
-      .then(function (r) {
-        if (!r.ok) throw new Error("UniProt " + r.status + " for " + acc);
-        return r.json();
-      })
-      .then(function (data) {
-        cache[acc] = data;
-        return data;
-      });
-  }
+  // Build a tree structure from a UniProt protein record
+  function buildHierarchy(data) {
+    var root = {
+      accession: data.primaryAccession || "?",
+      name: (data.proteinDescription &&
+             data.proteinDescription.recommendedName &&
+             data.proteinDescription.recommendedName.fullName &&
+             data.proteinDescription.recommendedName.fullName.value) ||
+            data.uniProtkbId || "Unknown",
+      organism: (data.organism && data.organism.scientificName) || "",
+      children: []
+    };
 
-  // ---------- 2) Extract "by similarity X" references from a feature ----------
-  // UniProt encodes "inferred from" in evidence.source like "P12345" or "UniRef..."
-  function extractInferenceTargets(feature) {
-    var targets = [];
-    (feature.evidences || []).forEach(function (e) {
-      var src = e.source || "";
-      // accession-style: P12345, Q9Y6K9
-      if (/^[A-Z][A-Z0-9]{5,9}$/.test(src) && /\d/.test(src)) {
-        targets.push(src);
-      }
+    // Group features by trust tier → then by feature type
+    var byTier = {};
+    TIERS.forEach(function (t) { byTier[t] = {}; });
+
+    var features = (data.features || []).filter(function (f) {
+      return f.evidences && f.evidences.length > 0;
     });
-    return targets;
-  }
 
-  // ---------- 3) Build the tree ----------
-  // depth 0 = the searched protein, depth 1 = its direct sources, etc.
-  function buildTree(acc, depth, maxDepth) {
-    return getProtein(acc).then(function (data) {
-      var name = (data.proteinDescription &&
-                  data.proteinDescription.recommendedName &&
-                  data.proteinDescription.recommendedName.fullName &&
-                  data.proteinDescription.recommendedName.fullName.value) ||
-                 data.uniProtkbId || acc;
+    features.forEach(function (f) {
+      var codes = f.evidences.map(function (e) { return e.evidenceCode; });
+      var tier = window.Evidence.classifyEvidence(codes).tier;
+      var key = f.type || "Feature";
+      if (!byTier[tier][key]) byTier[tier][key] = [];
+      byTier[tier][key].push(f);
+    });
 
-      var node = {
-        accession: acc,
-        name: name,
-        organism: (data.organism && data.organism.scientificName) || "",
-        children: [],
-        evidenceTiers: {},
-        refs: []
+    TIERS.forEach(function (tier) {
+      var groups = byTier[tier];
+      var total = 0;
+      Object.keys(groups).forEach(function (k) { total += groups[k].length; });
+      if (!total) return;
+
+      var tierNode = {
+        label: window.Evidence.ECO_MAP[
+          Object.keys(window.Evidence.ECO_MAP)
+            .find(function (k) {
+              return window.Evidence.ECO_MAP[k].tier === tier;
+            })
+        ] ? window.Evidence.ECO_MAP[
+          Object.keys(window.Evidence.ECO_MAP)
+            .find(function (k) {
+              return window.Evidence.ECO_MAP[k].tier === tier;
+            })
+        ].label : tier,
+        count: total,
+        color: COLORS[tier],
+        tier: tier,
+        children: []
       };
 
-      if (depth >= maxDepth) return node;
-
-      // Collect ALL unique inference targets across features
-      var targets = {};
-      (data.features || []).forEach(function (f) {
-        var t = extractInferenceTargets(f);
-        t.forEach(function (a) { targets[a] = true; });
+      Object.keys(groups).sort().forEach(function (key) {
+        var list = groups[key];
+        var child = {
+          label: key,
+          count: list.length,
+          color: COLORS[tier],
+          examples: list.slice(0, 3).map(function (f) {
+            var pos = "";
+            if (f.location && f.location.start && f.location.end) {
+              pos = "pos " + f.location.start.value + "–" + f.location.end.value;
+            }
+            return { desc: f.description || key, pos: pos };
+          })
+        };
+        tierNode.children.push(child);
       });
 
-      var list = Object.keys(targets).slice(0, 3);   // cap fan-out
-      return Promise.all(list.map(function (childAcc) {
-        return buildTree(childAcc, depth + 1, maxDepth)
-          .catch(function () { return null; });
-      })).then(function (kids) {
-        node.children = kids.filter(Boolean);
-        return node;
-      });
+      root.children.push(tierNode);
     });
+
+    return root;
   }
 
-  // ---------- 4) Render as an HTML tree ----------
-  function renderNode(node, level) {
-    if (!node) return "";
-    var pad = 20 * level;
+  function renderHierarchy(node, level, isTier, maxItems) {
+    maxItems = maxItems || 5;
+    var pad = 18 * level;
     var isRoot = level === 0;
 
-    var childHtml = node.children.map(function (c) {
-      return renderNode(c, level + 1);
-    }).join("");
+    var label = node.label || node.name || node.accession || "?";
+    var count = node.count;
+    var color = node.color || "#ffffff";
+
+    // Root row
+    var rootRow =
+      '<div class="prov-row" style="padding-left:' + pad + 'px">' +
+        '<span class="prov-arrow">' + (isRoot ? "🎯" : "↳") + '</span>' +
+        '<span class="prov-name" style="' +
+          (isTier ? 'color:' + color : '') + '">' + label + '</span>' +
+        (count !== undefined ?
+          '<span class="prov-count" style="background:' + color +
+            '20;color:' + color + ';border-color:' + color + '">' +
+            count + '</span>' : '') +
+        (node.organism ?
+          '<small class="prov-org">' + node.organism + '</small>' : '') +
+      '</div>';
+
+    // Examples (leaf level)
+    var examplesHtml = "";
+    if (node.examples) {
+      examplesHtml = node.examples.map(function (ex) {
+        return '<div class="prov-row prov-example" style="padding-left:' +
+               (pad + 20) + 'px">' +
+          '<span class="prov-arrow">·</span>' +
+          '<span class="prov-name">' + ex.desc + '</span>' +
+          '<small class="prov-org">' + ex.pos + '</small>' +
+        '</div>';
+      }).join("");
+    }
+
+    // Children
+    var childrenHtml = "";
+    if (node.children && node.children.length) {
+      childrenHtml = node.children.slice(0, maxItems).map(function (c) {
+        return renderHierarchy(c, level + 1, !isTier && !isRoot, maxItems);
+      }).join("");
+    }
 
     return (
       '<div class="prov-node' + (isRoot ? ' root' : '') + '">' +
-        '<div class="prov-row" style="padding-left:' + pad + 'px">' +
-          '<span class="prov-arrow">' + (isRoot ? "🎯" : "↳") + '</span>' +
-          '<a class="prov-acc" href="?q=' + node.accession + '">' +
-            node.accession + '</a>' +
-          '<span class="prov-name">' + node.name + '</span>' +
-          '<small class="prov-org">' + node.organism + '</small>' +
-        '</div>' +
-        (childHtml ? '<div class="prov-children">' + childHtml + '</div>' : '') +
+        rootRow + examplesHtml +
+        (childrenHtml ?
+          '<div class="prov-children">' + childrenHtml + '</div>' : '') +
       '</div>'
     );
   }
 
-  // ---------- 5) Public API ----------
-  function renderForAccession(acc, container, maxDepth) {
-    maxDepth = maxDepth || 2;
-    container.innerHTML = '<div class="prov-loading">' +
-      'Building provenance tree (depth ' + maxDepth + ')…' +
-      '<div class="loading-bar"></div></div>';
-    return buildTree(acc, 0, maxDepth).then(function (tree) {
-      if (!tree.children.length) {
-        container.innerHTML = '<div class="prov-empty">' +
-          'No inference links found — this protein is not annotated ' +
-          '"by similarity" to any other entry.</div>';
-        return;
-      }
-      container.innerHTML =
-        '<div class="prov-tree">' + renderNode(tree, 0) + '</div>';
-    }).catch(function (e) {
-      container.innerHTML = '<div class="prov-empty">Error: ' +
-        e.message + '</div>';
-    });
+  function renderForData(data, container) {
+    var tree = buildHierarchy(data);
+    if (!tree.children.length) {
+      container.innerHTML = '<div class="prov-empty">' +
+        'No features with evidence codes in this record.</div>';
+      return;
+    }
+    var total = tree.children.reduce(function (s, t) { return s + t.count; }, 0);
+    container.innerHTML =
+      '<div class="prov-summary">' + total + ' annotated features · ' +
+        tree.children.length + ' trust tier' +
+        (tree.children.length !== 1 ? 's' : '') + '</div>' +
+      '<div class="prov-tree">' + renderHierarchy(tree, 0, false) + '</div>';
   }
 
   window.Provenance = {
-    buildTree: buildTree,
-    renderForAccession: renderForAccession,
-    _cache: cache
+    buildHierarchy: buildHierarchy,
+    renderForData: renderForData
   };
-  console.log("[Provenance] ready");
+  console.log("[Provenance] ready v3 (hierarchy)");
 })();
