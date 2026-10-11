@@ -1,10 +1,12 @@
-// structure.js v44 — click-proof preview + live 3D (built 2026-10-11)
+// structure.js v47 — preloads WebGL in the background
 (function () {
-  var VERSION = "v44";
+  var VERSION = "v47";
   var pdbIdCache = {};
   var activeViewer = null;
   var currentModel = null;
-  var liveMode = false;
+  var prebuiltContainer = null;
+  var prebuiltMeta = null;
+  var isReady = false;
 
   function getPDBIds(acc) {
     if (pdbIdCache[acc]) return Promise.resolve(pdbIdCache[acc]);
@@ -42,11 +44,7 @@
       .then(function (data) {
         if (!Array.isArray(data) || !data.length) throw new Error("no AF");
         var pdbUrl = data[0].pdbUrl;
-        if (!pdbUrl) throw new Error("no pdbUrl");
-        return fetch(pdbUrl).then(function (r) {
-          if (!r.ok) throw new Error("AF file " + r.status);
-          return r.text();
-        });
+        return fetch(pdbUrl).then(function (r) { return r.text(); });
       });
   }
 
@@ -73,10 +71,12 @@
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   }
 
-  function resetLive() { liveMode = false; }
-
+  // ---------- Preview (visible to user) ----------
   function renderPreview(container, imageUrl, metaHtml, onPlay) {
     container.innerHTML = '';
+    prebuiltContainer = null;
+    prebuiltMeta = null;
+    isReady = false;
 
     var wrap = document.createElement('div');
     wrap.className = 'mol-preview';
@@ -96,46 +96,23 @@
     img.onerror = function () { img.src = alphaFoldSvg(); };
     wrap.appendChild(img);
 
-    var overlay = document.createElement('button');
-    overlay.type = 'button';
-    overlay.className = 'mol-play-overlay';
-    overlay.innerHTML =
-      '<svg viewBox="0 0 24 24" width="26" height="26" ' +
-        'fill="currentColor" style="flex-shrink:0">' +
-        '<path d="M8 5v14l11-7z"/>' +
-      '</svg><span>Play 3D</span>';
-    overlay.style.cssText =
-      'position:absolute;bottom:22px;left:50%;' +
-      'transform:translateX(-50%);' +
-      'z-index:100;pointer-events:auto;cursor:pointer;' +
-      'display:inline-flex;align-items:center;gap:8px;' +
-      'padding:13px 22px;border-radius:999px;' +
-      'background:rgba(34,197,94,0.95);' +
-      'border:2px solid rgba(255,255,255,0.6);' +
-      'color:#fff;font-size:14.5px;font-weight:700;' +
-      'font-family:inherit;' +
-      'box-shadow:0 12px 32px rgba(34,197,94,0.55);' +
-      'transition:transform 0.15s ease,background 0.15s ease;' +
-      'touch-action:manipulation;-webkit-tap-highlight-color:transparent;';
+    // little "preparing" badge while we preload
+    var badge = document.createElement('div');
+    badge.className = 'mol-preload-badge';
+    badge.style.cssText =
+      'position:absolute;top:14px;left:50%;transform:translateX(-50%);' +
+      'font-size:10.5px;letter-spacing:0.5px;' +
+      'padding:5px 12px;border-radius:999px;' +
+      'background:rgba(255,255,255,0.10);' +
+      'border:1px solid rgba(255,255,255,0.28);' +
+      'color:rgba(255,255,255,0.85);font-weight:600;' +
+      'pointer-events:none;z-index:20;';
+    badge.textContent = '⟳ preparing 3D…';
+    wrap.appendChild(badge);
 
-    var fired = false;
-    function fire(e) {
-      if (e) { e.preventDefault(); e.stopPropagation(); }
-      if (fired) return;
-      fired = true;
-      overlay.disabled = true;
-      overlay.innerHTML = '<span>Loading…</span>';
-      try { onPlay(); } catch (err) {
-        console.error("[Structure] onPlay error:", err);
-        overlay.disabled = false;
-        overlay.innerHTML = '<span>Play 3D</span>';
-        fired = false;
-      }
-    }
-    overlay.addEventListener('click', fire);
-    overlay.addEventListener('touchend', fire);
+    wrap.appendChild(document.createElement('div')); // placeholder
+    wrap.lastChild.remove();
 
-    wrap.appendChild(overlay);
     container.appendChild(wrap);
 
     if (metaHtml) {
@@ -144,41 +121,43 @@
       meta.innerHTML = metaHtml;
       container.appendChild(meta);
     }
+
+    // Preload the WebGL viewer into a hidden div NOW
+    if (currentModel && window.$3Dmol) {
+      prebuildHiddenViewer(metaHtml).then(function () {
+        isReady = true;
+        badge.style.opacity = '0';
+        setTimeout(function () { badge.remove(); }, 400);
+        console.log('[Structure] background preload ready');
+      }).catch(function (e) {
+        console.warn('[Structure] preload failed:', e);
+        badge.textContent = '✓ ready';
+        badge.style.opacity = '0.6';
+      });
+    } else {
+      badge.remove();
+    }
   }
 
-  function mountLive3D(container, metaHtml) {
-    if (!currentModel) return;
+  // ---------- Build WebGL viewer in an offscreen container ----------
+  function prebuildHiddenViewer(metaHtml) {
+    return new Promise(function (resolve, reject) {
+      if (!window.$3Dmol || !currentModel) {
+        return reject(new Error('no 3Dmol or model'));
+      }
 
-    if (activeViewer && activeViewer.clear) {
-      try { activeViewer.clear(); } catch (e) {}
-      activeViewer = null;
-    }
+      // Offscreen hidden container
+      var offscreen = document.createElement('div');
+      offscreen.style.cssText =
+        'position:fixed;left:-99999px;top:-99999px;' +
+        'width:800px;height:600px;';
+      document.body.appendChild(offscreen);
 
-    container.innerHTML = '';
-
-    var height = 380;
-    if (window.innerWidth < 600) height = 320;
-    if (window.innerWidth < 400) height = 280;
-
-    var canvas = document.createElement('div');
-    canvas.className = 'mol-canvas';
-    canvas.style.cssText =
-      'width:100%;height:' + height + 'px;min-height:' + height + 'px;' +
-      'display:block;position:relative;';
-    container.appendChild(canvas);
-
-    if (!window.$3Dmol) {
-      container.innerHTML = '<div class="mol-empty">3Dmol.js not loaded</div>';
-      return;
-    }
-
-    setTimeout(function () {
       try {
-        var viewer = window.$3Dmol.createViewer(canvas, {
+        var viewer = window.$3Dmol.createViewer(offscreen, {
           backgroundColor: 'rgba(20,15,45,0.55)',
           antialias: false
         });
-        activeViewer = viewer;
         viewer.addModel(currentModel.data, currentModel.format);
         viewer.setStyle({}, {
           cartoon: {
@@ -193,56 +172,131 @@
         } catch (e) {}
         viewer.zoomTo();
         viewer.zoom(1.05);
-        viewer.spin('y', 0.35);
+        // Start PAUSED — no spin until user taps Play
+        viewer.spin('y', 0);
         viewer.render();
 
-        setTimeout(function () {
-          try { viewer.resize(); viewer.render(); } catch (e) {}
-        }, 150);
+        activeViewer = viewer;
+        activeViewer.__paused = true;
+        activeViewer.__offscreen = offscreen;
+        prebuiltMeta = metaHtml;
+        resolve(viewer);
+      } catch (e) {
+        try { offscreen.remove(); } catch (e2) {}
+        reject(e);
+      }
+    });
+  }
 
+  // ---------- Live view (visible) — reuse the prebuilt viewer ----------
+  function mountLive3D(container, metaHtml) {
+    if (!currentModel) return;
+
+    // If we already have a prebuilt viewer — just move its DOM to the visible container
+    if (activeViewer && activeViewer.__offscreen) {
+      container.innerHTML = '';
+      container.style.position = 'relative';
+
+      // Attach visible canvas frame
+      var frame = document.createElement('div');
+      frame.className = 'mol-canvas-live';
+      frame.style.cssText =
+        'width:100%;height:100%;min-height:340px;position:relative;';
+      container.appendChild(frame);
+
+      // Move the offscreen container (which holds the WebGL canvas) into frame
+      frame.appendChild(activeViewer.__offscreen);
+      activeViewer.__offscreen.style.cssText =
+        'position:relative;left:0;top:0;width:100%;height:100%;';
+
+      // Resize + start spinning
+      setTimeout(function () {
+        try {
+          activeViewer.resize();
+          activeViewer.spin('y', 0.35);
+          activeViewer.render();
+          activeViewer.__paused = false;
+        } catch (e) {}
+      }, 50);
+
+      if (metaHtml) {
+        var meta = document.createElement('div');
+        meta.className = 'mol-meta';
+        meta.innerHTML = metaHtml;
+        container.appendChild(meta);
+      }
+
+      // Add pause button
+      var pauseBtn = document.createElement('button');
+      pauseBtn.type = 'button';
+      pauseBtn.textContent = '⏸ Pause';
+      pauseBtn.style.cssText =
+        'position:absolute;bottom:12px;left:14px;z-index:100;' +
+        'padding:7px 14px;border-radius:999px;' +
+        'background:rgba(255,255,255,0.14);' +
+        'border:1px solid rgba(255,255,255,0.35);' +
+        'color:#fff;cursor:pointer;font-size:11px;' +
+        'font-weight:600;font-family:inherit;' +
+        'touch-action:manipulation;';
+      pauseBtn.addEventListener('click', function () {
+        try {
+          if (activeViewer.__paused) {
+            activeViewer.spin('y', 0.35);
+            activeViewer.render();
+            activeViewer.__paused = false;
+            pauseBtn.textContent = '⏸ Pause';
+          } else {
+            activeViewer.spin('y', 0);
+            activeViewer.render();
+            activeViewer.__paused = true;
+            pauseBtn.textContent = '▶ Resume';
+          }
+        } catch (e) {}
+      });
+      container.appendChild(pauseBtn);
+
+      return;
+    }
+
+    // Fallback: build fresh (should not happen if preload succeeded)
+    container.innerHTML = '';
+    container.style.position = 'relative';
+    var canvas = document.createElement('div');
+    canvas.className = 'mol-canvas';
+    canvas.style.cssText =
+      'width:100%;height:380px;min-height:380px;display:block;position:relative;';
+    container.appendChild(canvas);
+
+    if (!window.$3Dmol) return;
+    setTimeout(function () {
+      try {
+        var viewer = window.$3Dmol.createViewer(canvas, {
+          backgroundColor: 'rgba(20,15,45,0.55)',
+          antialias: false
+        });
+        activeViewer = viewer;
+        viewer.addModel(currentModel.data, currentModel.format);
+        viewer.setStyle({}, {
+          cartoon: {
+            color: 'spectrum', arrows: true, tubes: true, thickness: 0.5
+          }
+        });
+        viewer.zoomTo();
+        viewer.spin('y', 0.35);
+        viewer.render();
         if (metaHtml) {
           var meta = document.createElement('div');
           meta.className = 'mol-meta';
           meta.innerHTML = metaHtml;
           container.appendChild(meta);
         }
-
-        var pauseBtn = document.createElement('button');
-        pauseBtn.type = 'button';
-        pauseBtn.textContent = '⏸ Pause';
-        pauseBtn.style.cssText =
-          'position:absolute;bottom:12px;left:14px;z-index:100;' +
-          'padding:7px 14px;border-radius:999px;' +
-          'background:rgba(255,255,255,0.14);' +
-          'border:1px solid rgba(255,255,255,0.35);' +
-          'color:#fff;cursor:pointer;font-size:11px;' +
-          'font-weight:600;font-family:inherit;' +
-          'touch-action:manipulation;';
-        pauseBtn.addEventListener('click', function () {
-          try {
-            if (viewer.__paused) {
-              viewer.spin('y', 0.35);
-              viewer.render();
-              viewer.__paused = false;
-              pauseBtn.textContent = '⏸ Pause';
-            } else {
-              viewer.spin('y', 0);
-              viewer.render();
-              viewer.__paused = true;
-              pauseBtn.textContent = '▶ Resume';
-            }
-          } catch (e) {}
-        });
-        container.style.position = 'relative';
-        container.appendChild(pauseBtn);
       } catch (e) {
-        console.error("[Structure] WebGL mount failed:", e);
-        container.innerHTML =
-          '<div class="mol-empty">Live 3D failed: ' + e.message + '</div>';
+        console.error('[Structure] fallback mount failed:', e);
       }
-    }, 60);
+    }, 40);
   }
 
+  // ---------- tryOne ----------
   function tryOne(acc, container) {
     return getPDBIds(acc).then(function (pdbIds) {
       if (!pdbIds || !pdbIds.length) throw new Error("no PDB");
@@ -256,7 +310,6 @@
           '" target="_blank" rel="noopener">' + pdbId + '</a>' +
           (pdbIds.length > 1 ? ' · +' + (pdbIds.length - 1) + ' more' : '') +
           ' · from ' + acc;
-        resetLive();
         renderPreview(container, pdbThumbnail(pdbId), meta, function () {
           mountLive3D(container, meta);
         });
@@ -270,7 +323,6 @@
           '🧬 <strong>Predicted structure</strong> · ' +
           '<a href="https://alphafold.ebi.ac.uk/entry/' + acc +
           '" target="_blank" rel="noopener">AlphaFold DB</a> · ' + acc;
-        resetLive();
         renderPreview(container, alphaFoldSvg(), meta, function () {
           mountLive3D(container, meta);
         });
@@ -289,7 +341,6 @@
       return featCount >= 3 || seqLen >= 100;
     });
     if (!viable.length) viable = proteins.slice();
-
     return viable.slice().sort(function (a, b) {
       var aR = a.entryType && a.entryType.indexOf("reviewed") >= 0 ? 1 : 0;
       var bR = b.entryType && b.entryType.indexOf("reviewed") >= 0 ? 1 : 0;
@@ -297,18 +348,27 @@
       var bLen = (b.sequence && b.sequence.length) || 0;
       var aF = (a.features || []).length;
       var bF = (b.features || []).length;
-      var aS = aR * 500 + aF * 10 + Math.min(aLen, 2000);
-      var bS = bR * 500 + bF * 10 + Math.min(bLen, 2000);
-      return bS - aS;
+      return (bR * 500 + bF * 10 + Math.min(bLen, 2000)) -
+             (aR * 500 + aF * 10 + Math.min(aLen, 2000));
     });
   }
 
   function renderFromSearch(proteins, container) {
+    // Clean up any old offscreen viewer
+    if (activeViewer && activeViewer.__offscreen) {
+      try { activeViewer.__offscreen.remove(); } catch (e) {}
+    }
+    activeViewer = null;
+    prebuiltContainer = null;
+    prebuiltMeta = null;
+    isReady = false;
+
     container.innerHTML =
       '<div class="mol-loading">Finding a representative structure…' +
       '<div class="loading-bar"></div>' +
       '<div style="font-size:11px;color:rgba(255,255,255,0.55);' +
-      'margin-top:8px">Static preview loads first · tap Play to spin</div></div>';
+      'margin-top:8px">Preview loads instantly · 3D preloads in background' +
+      '</div></div>';
 
     var ranked = rankCandidates(proteins).slice(0, 5);
     var idx = 0;
@@ -329,35 +389,40 @@
     tryNext();
   }
 
-  function stopActive() {
-    if (activeViewer && activeViewer.stopAnimate) {
-      try { activeViewer.stopAnimate(); } catch (e) {}
-    }
-    activeViewer = null;
-  }
-
   function startLive() {
-    var container = document.getElementById('collective-3d');
-    if (!container) return Promise.reject(new Error('no container'));
-    var metaEl = container.querySelector('.mol-meta');
-    var metaHtml = metaEl ? metaEl.innerHTML : '';
     return new Promise(function (resolve, reject) {
-      try {
+      var container = document.getElementById('collective-3d');
+      if (!container) return reject(new Error('no container'));
+
+      // Fast path: prebuild already finished
+      if (activeViewer && activeViewer.__offscreen) {
+        var metaEl = container.querySelector('.mol-meta');
+        var metaHtml = metaEl ? metaEl.innerHTML : prebuiltMeta;
         mountLive3D(container, metaHtml);
-        // Wait a bit for the viewer to attach
-        setTimeout(function () {
-          if (activeViewer) {
-            liveMode = true;
-            resolve(true);
-          } else {
-            reject(new Error('WebGL did not initialize'));
-          }
-        }, 400);
-      } catch (e) { reject(e); }
+        return resolve(true);
+      }
+
+      // Slow path: still preloading — poll for 4 s
+      var tries = 0;
+      var iv = setInterval(function () {
+        tries++;
+        if (activeViewer && activeViewer.__offscreen) {
+          clearInterval(iv);
+          var metaEl = container.querySelector('.mol-meta');
+          var metaHtml = metaEl ? metaEl.innerHTML : prebuiltMeta;
+          mountLive3D(container, metaHtml);
+          resolve(true);
+        } else if (tries > 40) {
+          clearInterval(iv);
+          reject(new Error('preload timed out'));
+        }
+      }, 100);
     });
   }
 
-  function isLive() { return liveMode; }
+  function isLive() {
+    return !!(activeViewer && !activeViewer.__offscreen);
+  }
 
   function toggleSpin() {
     if (!activeViewer) return false;
@@ -376,6 +441,12 @@
     } catch (e) { return false; }
   }
 
+  function stopActive() {
+    if (activeViewer && activeViewer.stopAnimate) {
+      try { activeViewer.stopAnimate(); } catch (e) {}
+    }
+  }
+
   window.Structure = {
     startLive: startLive,
     isLive: isLive,
@@ -385,5 +456,5 @@
     tryOne: tryOne,
     render: function (acc, container) { tryOne(acc, container); }
   };
-  console.log('[Structure] ready ' + VERSION);
+  console.log('[Structure] ready ' + VERSION + ' — preloaded WebGL');
 })();
