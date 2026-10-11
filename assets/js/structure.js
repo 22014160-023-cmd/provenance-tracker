@@ -77,10 +77,11 @@
     // Give the DOM a tick to lay out the canvas before WebGL init
     setTimeout(function () {
       try {
-        var viewer = window.$3Dmol.createViewer(canvas, {
+        activeViewer = window.$3Dmol.createViewer(canvas, {
           backgroundColor: 'rgba(20,15,45,0.55)',
           antialias: true
         });
+        activeViewer = viewer;
         viewer.addModel(model, format);
 
         viewer.setStyle({}, {
@@ -104,7 +105,7 @@
 
         viewer.zoomTo();
         viewer.zoom(1.05);
-        viewer.spin('y', 0.6);
+        viewer.spin('y', 0.35);
         viewer.render();
 
         // Force a resize after a moment so it fills the box
@@ -264,7 +265,17 @@
     }
   }
 
+  var activeViewer = null;
+
+  function stopActive() {
+    if (activeViewer && activeViewer.stopAnimate) {
+      try { activeViewer.stopAnimate(); } catch (e) {}
+    }
+    activeViewer = null;
+  }
+
   window.Structure = {
+    stopActive: stopActive,
     renderFromSearch: renderFromSearch,
     getPDBIds: getPDBIds,
     tryOne: tryOne,

@@ -4,8 +4,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Search — BioOrigin</title>
 <link rel="icon" href="assets/img/favicon.svg"/>
-<link rel="stylesheet" href="assets/css/design-system.css?v=32"/>
-<link rel="stylesheet" href="assets/css/pages.css?v=32"/>
+<link rel="stylesheet" href="assets/css/design-system.css?v=33"/>
+<link rel="stylesheet" href="assets/css/pages.css?v=33"/>
 <style>
   /* ---------- Horizontal scroll wrapper — desktop layout frozen ---------- */
   .card-scroll{width:100%;padding-bottom:12px;}
@@ -380,17 +380,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
 <!-- Project scripts -->
-<script src="assets/js/config.js?v=32"></script>
-<script src="assets/js/bubbles.js?v=32"></script>
-<script src="assets/js/ui.js?v=32"></script>
-<script src="assets/js/api.js?v=32"></script>
-<script src="assets/js/evidence.js?v=32"></script>
-<script src="assets/js/retraction.js?v=32"></script>
-<script src="assets/js/impact.js?v=32"></script>
-<script src="assets/js/structure.js?v=32"></script>
-<script src="assets/js/collective.js?v=32"></script>
-<script src="assets/js/tree.js?v=32"></script>
-<script src="assets/js/pdf.js?v=32"></script>
+<script src="assets/js/config.js?v=33"></script>
+<script src="assets/js/bubbles.js?v=33"></script>
+<script src="assets/js/ui.js?v=33"></script>
+<script src="assets/js/api.js?v=33"></script>
+<script src="assets/js/evidence.js?v=33"></script>
+<script src="assets/js/retraction.js?v=33"></script>
+<script src="assets/js/impact.js?v=33"></script>
+<script src="assets/js/structure.js?v=33"></script>
+<script src="assets/js/collective.js?v=33"></script>
+<script src="assets/js/tree.js?v=33"></script>
+<script src="assets/js/pdf.js?v=33"></script>
 
 <script>
 (function () {
@@ -592,6 +592,18 @@
         }
       }
 
+      // Pause heavy animations when 3D is on screen
+      if (target === 'charts') {
+        // Charts tab contains the 3D viewer — stop bubbles to free GPU
+        if (window.Bubbles) window.Bubbles.stop();
+      } else {
+        // Other tabs — free the 3D viewer's spin loop, restart bubbles
+        if (window.Structure && window.Structure.stopActive) {
+          window.Structure.stopActive();
+        }
+        if (window.Bubbles) window.Bubbles.start();
+      }
+
       if (navigator.vibrate) navigator.vibrate(8);
     });
 
@@ -601,7 +613,10 @@
     }
 
     // Load the 3D viewer immediately on the charts tab
-    setTimeout(function () { load3D(proteins, 0); }, 120);
+    setTimeout(function () {
+      if (window.Bubbles) window.Bubbles.stop();
+      load3D(proteins, 0);
+    }, 120);
 
     // Wire the "Next protein" switch button
     var btn = document.getElementById('switch3d');
@@ -714,6 +729,7 @@
       var pmids = collectAllPmids(results);
       return window.Retraction.checkPmids(pmids).then(function (retractions) {
         console.log("[BioOrigin] rendered");
+        if (window.Bubbles) window.Bubbles.stop();
         out.innerHTML = renderCollective(results, retractions);
         setupTabs(results, retractions);
         setupActions(results, retractions);

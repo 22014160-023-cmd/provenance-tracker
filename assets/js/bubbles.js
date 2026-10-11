@@ -95,12 +95,43 @@ function spawnBubble() {
   obs.observe(layer, { childList: true });
 }
 
+// --- Bubble throttling + visibility control ---
+let bubbleIntervalId = null;
+
+function startBubbles() {
+  if (bubbleIntervalId) return;
+  bubbleIntervalId = setInterval(spawnBubble, 900);  // slower spawn
+  for (let i = 0; i < 3; i++) setTimeout(spawnBubble, i * 250);
+}
+
+function stopBubbles() {
+  if (bubbleIntervalId) {
+    clearInterval(bubbleIntervalId);
+    bubbleIntervalId = null;
+  }
+  // Clear existing bubbles to free GPU
+  const layer = document.getElementById('bubbleLayer');
+  if (layer) layer.innerHTML = '';
+}
+
+// Expose globally so other code can pause bubbles
+window.Bubbles = { start: startBubbles, stop: stopBubbles };
+
 document.addEventListener('DOMContentLoaded', () => {
   if (!document.getElementById('bubbleLayer')) {
     const l = document.createElement('div');
     l.id = 'bubbleLayer';
     document.body.prepend(l);
   }
-  setInterval(spawnBubble, 550);
-  for (let i = 0; i < 5; i++) setTimeout(spawnBubble, i * 200);
+  // Only start bubbles if the user prefers motion
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!prefersReduced) {
+    startBubbles();
+  }
+
+  // Pause bubbles when tab is hidden (huge battery + CPU saver)
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) stopBubbles();
+    else if (!prefersReduced) startBubbles();
+  });
 });
